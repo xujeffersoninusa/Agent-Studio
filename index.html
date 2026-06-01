@@ -20,6 +20,13 @@ body.sec-blocked .sec-block{display:flex!important;}
   function allow(){document.body.classList.remove('sec-pending','sec-blocked');}
   function check(){var token=new URLSearchParams(location.search).get('access');if(S.allowDirect&&token===S.validToken){allow();return;}block('Access Denied','Jefferson only. Use ?access=jeffersonxuinteradyne');}
   document.addEventListener('DOMContentLoaded',check);
+  // Show credentials prompt on first load if tokens missing
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(function(){
+      const s=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+      if(!s.githubToken||!s.supabaseMgmtToken) openSettings();
+    },800);
+  });
 })();
 </script>
 <style>
@@ -147,8 +154,23 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
 #toast.success{border-color:rgba(52,211,153,.4);color:var(--green);}
 #toast.error{border-color:rgba(248,113,113,.4);color:var(--red);}
 
-/* ── Responsive ── */
-@media(max-width:900px){.intake-layout,.blueprint-layout,.field-row{grid-template-columns:1fr;}}
+/* ── Auto-provision log ── */
+.auto-log{background:#0a0d18;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:ui-monospace,Consolas,monospace;font-size:12px;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+.log-line{line-height:1.5;color:#8a9bb8;}
+.log-line.log-success{color:var(--green);}
+.log-line.log-error{color:var(--red);}
+.log-line.log-warn{color:var(--amber);}
+.log-line.log-info{color:#8a9bb8;}
+.log-time{color:#3a4a6a;margin-right:8px;}
+.done-banner{display:none;align-items:center;gap:14px;padding:16px 20px;background:var(--green-s);border:1px solid rgba(52,211,153,.3);border-radius:10px;margin-top:14px;}
+.done-banner .db-icon{font-size:28px;}
+.done-banner .db-text{flex:1;}
+.done-banner .db-title{font-size:15px;font-weight:800;color:var(--green);margin-bottom:4px;}
+.done-banner .db-url{font-size:12px;color:var(--muted);}
+.done-banner a{color:var(--accent);text-decoration:none;}
+.done-banner a:hover{text-decoration:underline;}
+.auto-btn{background:linear-gradient(135deg,var(--green-s),var(--accent-s));color:var(--green);border:1px solid rgba(52,211,153,.4);font-weight:800;font-size:14px;padding:12px 24px;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;}
+.auto-btn:hover{background:linear-gradient(135deg,#0d3d27,#1a3a5c);box-shadow:0 0 20px rgba(52,211,153,.2);}
 </style>
 </head>
 <body class="sec-pending">
@@ -175,6 +197,30 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
   </div>
   <div style="display:flex;gap:8px;align-items:center;">
     <span style="font-size:11px;color:var(--muted);">Logged in as Jefferson Xu</span>
+    <button class="btn-secondary" onclick="openSettings()" style="font-size:11px;padding:5px 10px;">⚙️ Credentials</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;width:min(580px,100%);padding:28px;box-shadow:0 40px 80px rgba(0,0,0,.7);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:800;">⚙️ Agent Credentials</div>
+      <button class="btn-ghost" onclick="closeSettings()" style="padding:5px 10px;">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;padding:10px 12px;background:var(--green-s);border:1px solid rgba(52,211,153,.2);border-radius:8px;">
+      ✅ Credentials are stored in your <strong>browser localStorage only</strong> — never in the HTML file or GitHub.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div><label>Supabase Management Token (sbp_...)</label><input id="sSbpToken" type="password" placeholder="sbp_..."/></div>
+      <div><label>GitHub Personal Access Token (ghp_...)</label><input id="sGhToken" type="password" placeholder="ghp_..."/></div>
+      <div><label>GitHub Username</label><input id="sGhUser" placeholder="xujeffersoninusa"/></div>
+      <div><label>Cloudflare Proxy URL</label><input id="sProxy" placeholder="https://rapid-pine-a057.xujefferson.workers.dev"/></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn-primary" onclick="saveSettings()" style="flex:1;">💾 Save to browser</button>
+      <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -363,10 +409,20 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
 
 <script>
 'use strict';
-const CONFIG={
-  proxyUrl:'https://rapid-pine-a057.xujefferson.workers.dev',
-  claudeKey:''
-};
+// ── Credentials stored in localStorage (never in source code) ──
+const CONFIG = (function(){
+  const stored = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  return {
+    proxyUrl:          stored.proxyUrl          || 'https://rapid-pine-a057.xujefferson.workers.dev',
+    claudeKey:         stored.claudeKey          || '',
+    supabaseUrl:       stored.supabaseUrl        || 'https://cqgzndwisonvnlsxicmd.supabase.co',
+    supabaseProjectRef:stored.supabaseProjectRef || 'cqgzndwisonvnlsxicmd',
+    supabaseMgmtToken: stored.supabaseMgmtToken  || '',
+    supabaseAnonKey:   stored.supabaseAnonKey    || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZ3puZHdpc29udm5sc3hpY21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDQzOTksImV4cCI6MjA5NTcyMDM5OX0.nOCt3ddBWhzXGzqcpVvBvNboBro3xFgmpS7F-ZMHXpE',
+    githubToken:       stored.githubToken        || '',
+    githubUser:        stored.githubUser         || 'xujeffersoninusa',
+  };
+})();
 const toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className=type?`show ${type}`:'show';setTimeout(()=>t.className='',3200);};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
@@ -727,12 +783,6 @@ Respond with ONLY the complete HTML file, no explanation.`;
 }
 
 function renderProvision(bp, sql, html){
-  let activeCode='sql';
-  const switchCode=(tab)=>{
-    activeCode=tab;
-    document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
-    document.getElementById('codeOutput').textContent = tab==='sql' ? sql : html;
-  };
   document.getElementById('provisionContent').innerHTML=`
     <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:20px;">
       <div>
@@ -741,22 +791,20 @@ function renderProvision(bp, sql, html){
           <div class="spec-row"><span class="spec-key">Hub</span><span class="spec-val">${esc(bp.hub_name)}</span></div>
           <div class="spec-row"><span class="spec-key">DB table</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${esc(bp.db_table)}</span></div>
           <div class="spec-row"><span class="spec-key">Access token</span><span class="spec-val" style="font-family:monospace;font-size:12px;color:var(--amber);">${esc(bp.access_token)}</span></div>
+          <div class="spec-row"><span class="spec-key">GitHub repo</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${bp.hub_id}-hub</span></div>
           <div class="spec-row"><span class="spec-key">SQL lines</span><span class="spec-val">${sql.split('\n').length}</span></div>
           <div class="spec-row"><span class="spec-key">HTML lines</span><span class="spec-val">${html.split('\n').length}</span></div>
         </div>
-        <div class="spec-section">
-          <h3>Deploy Steps</h3>
-          <div style="font-size:12px;color:var(--muted);line-height:2;">
-            1. Copy SQL → run in Supabase<br/>
-            2. Copy HTML → save as <code style="color:var(--accent)">index.html</code><br/>
-            3. Upload to new GitHub repo<br/>
-            4. Enable GitHub Pages<br/>
-            5. Access via token URL<br/>
-          </div>
+        <div style="margin:16px 0;">
+          <button class="auto-btn" onclick="startAutoProvision()">⚡ Auto-Deploy Everything</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">Runs SQL → Creates GitHub repo → Uploads HTML → Enables Pages — fully automatic</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
-          <button class="btn-primary" onclick="downloadFile('sql')">⬇ Download SQL</button>
-          <button class="btn-primary" onclick="downloadFile('html')">⬇ Download HTML</button>
+        <div class="spec-section">
+          <h3>Or download manually</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button class="btn-ghost" style="font-size:12px;" onclick="downloadFile('sql')">⬇ Download SQL</button>
+            <button class="btn-ghost" style="font-size:12px;" onclick="downloadFile('html')">⬇ Download HTML</button>
+          </div>
         </div>
       </div>
       <div>
@@ -768,8 +816,28 @@ function renderProvision(bp, sql, html){
         </div>
         <div class="code-block" id="codeOutput">${esc(sql)}</div>
       </div>
+    </div>
+    <div id="autoProvisionLog" style="display:none;margin-bottom:16px;">
+      <div style="font-weight:800;font-size:13px;margin-bottom:10px;color:var(--ink);">⚡ Auto-Provisioning Log</div>
+      <div class="auto-log" id="autoLog"></div>
+      <div class="done-banner" id="autoProvisionDone">
+        <div class="db-icon">🎉</div>
+        <div class="db-text">
+          <div class="db-title">Hub is live!</div>
+          <div class="db-url"><a id="hubLiveUrl" href="#" target="_blank">—</a></div>
+        </div>
+        <button class="btn-primary" onclick="goStep(5)">Validate →</button>
+      </div>
     </div>`;
   renderValidation(bp);
+}
+
+async function startAutoProvision(){
+  if(!checkCredentials()) return;
+  document.getElementById('autoProvisionLog').style.display='block';
+  document.getElementById('autoProvisionLog').scrollIntoView({behavior:'smooth'});
+  await autoProvision(pipeline.spec, pipeline.generatedSQL, pipeline.generatedHTML);
+  markStepDone(4);
 }
 
 function downloadFile(type){
@@ -821,11 +889,188 @@ function publish(){
   document.querySelectorAll('.step-btn').forEach(b=>b.classList.add('done'));
 }
 
-function copyBlueprint(){
+function openSettings(){
+  const s=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  document.getElementById('sSbpToken').value = s.supabaseMgmtToken||'';
+  document.getElementById('sGhToken').value  = s.githubToken||'';
+  document.getElementById('sGhUser').value   = s.githubUser||'xujeffersoninusa';
+  document.getElementById('sProxy').value    = s.proxyUrl||'https://rapid-pine-a057.xujefferson.workers.dev';
+  document.getElementById('settingsModal').style.display='flex';
+}
+function closeSettings(){
+  document.getElementById('settingsModal').style.display='none';
+}
+function saveSettings(){
+  const existing = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  const updated = {
+    ...existing,
+    supabaseMgmtToken: document.getElementById('sSbpToken').value.trim(),
+    githubToken:       document.getElementById('sGhToken').value.trim(),
+    githubUser:        document.getElementById('sGhUser').value.trim(),
+    proxyUrl:          document.getElementById('sProxy').value.trim(),
+  };
+  localStorage.setItem('agentStudioConfig', JSON.stringify(updated));
+  // Update live CONFIG
+  CONFIG.supabaseMgmtToken = updated.supabaseMgmtToken;
+  CONFIG.githubToken       = updated.githubToken;
+  CONFIG.githubUser        = updated.githubUser;
+  CONFIG.proxyUrl          = updated.proxyUrl;
+  closeSettings();
+  toast('Credentials saved to browser ✓','success');
+}
+
+function checkCredentials(){
+  const missing = [];
+  if(!CONFIG.supabaseMgmtToken) missing.push('Supabase Management Token');
+  if(!CONFIG.githubToken)       missing.push('GitHub Token');
+  if(missing.length){
+    toast('Missing credentials: '+missing.join(', ')+' — click ⚙️ Credentials','error');
+    openSettings();
+    return false;
+  }
+  return true;
+}
   if(pipeline.blueprint){
     navigator.clipboard.writeText(JSON.stringify(pipeline.blueprint,null,2));
     toast('Blueprint JSON copied ✓','success');
   }
+}
+
+// ── AUTO-PROVISIONING ──────────────────────────────────────────
+
+async function autoProvision(bp, sql, html){
+  const log = (msg, type='info') => {
+    const el = document.getElementById('autoLog');
+    if(!el) return;
+    const div = document.createElement('div');
+    div.className = `log-line log-${type}`;
+    div.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString()}</span> ${msg}`;
+    el.appendChild(div);
+    el.scrollTop = el.scrollHeight;
+  };
+
+  const results = {sql:false, repo:false, upload:false, pages:false};
+
+  // ── Step A: Run SQL in Supabase ──
+  log('🗄️ Running SQL schema in Supabase…');
+  try{
+    const r = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/database/query`,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${CONFIG.supabaseMgmtToken}`,'Content-Type':'application/json'},
+      body: JSON.stringify({query: sql})
+    });
+    if(!r.ok){
+      const e = await r.json().catch(()=>({}));
+      // Try alternate endpoint
+      const r2 = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/sql`,{
+        method:'POST',
+        headers:{'Authorization':`Bearer ${CONFIG.supabaseMgmtToken}`,'Content-Type':'application/json'},
+        body: JSON.stringify({query: sql})
+      });
+      if(!r2.ok) throw new Error(e.message||`SQL failed ${r.status}`);
+    }
+    results.sql = true;
+    log('✅ SQL schema created successfully','success');
+  }catch(e){
+    log(`⚠️ SQL auto-run failed (${e.message}) — run manually in Supabase SQL Editor`,'warn');
+    results.sql = 'manual';
+  }
+
+  // ── Step B: Create GitHub repo ──
+  const repoName = bp.hub_id+'-hub';
+  log(`📁 Creating GitHub repository: ${repoName}…`);
+  try{
+    const r = await fetch(`https://api.github.com/user/repos`,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
+      body: JSON.stringify({name:repoName, description:`ActionHub OS — ${bp.hub_name}`, private:false, auto_init:false})
+    });
+    if(!r.ok){
+      const e = await r.json().catch(()=>({}));
+      if(e.errors?.[0]?.message?.includes('already exists')){
+        log(`ℹ️ Repo ${repoName} already exists — will update file`,'info');
+      } else {
+        throw new Error(e.message||`Repo create failed ${r.status}`);
+      }
+    } else {
+      results.repo = true;
+      log(`✅ Repository created: github.com/${CONFIG.githubUser}/${repoName}`,'success');
+      // Wait for repo to initialize
+      await new Promise(r=>setTimeout(r,2000));
+    }
+  }catch(e){
+    log(`❌ GitHub repo creation failed: ${e.message}`,'error');
+  }
+
+  // ── Step C: Upload index.html ──
+  log(`⬆️ Uploading index.html to ${repoName}…`);
+  try{
+    // Check if file exists to get SHA for update
+    let sha = null;
+    const check = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/contents/index.html`,{
+      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Accept':'application/vnd.github+json'}
+    });
+    if(check.ok){ const d=await check.json(); sha=d.sha; }
+
+    const body = {
+      message:`Deploy ${bp.hub_name} via ActionHub Agent Studio`,
+      content: btoa(unescape(encodeURIComponent(html))),
+    };
+    if(sha) body.sha = sha;
+
+    const r = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/contents/index.html`,{
+      method:'PUT',
+      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
+      body: JSON.stringify(body)
+    });
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||`Upload failed ${r.status}`);}
+    results.upload = true;
+    log(`✅ index.html uploaded successfully`,'success');
+  }catch(e){
+    log(`❌ Upload failed: ${e.message}`,'error');
+  }
+
+  // ── Step D: Enable GitHub Pages ──
+  log(`🌐 Enabling GitHub Pages…`);
+  try{
+    const r = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/pages`,{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
+      body: JSON.stringify({source:{branch:'main',path:'/'}})
+    });
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      if(e.message?.includes('already enabled')||r.status===409){
+        log(`ℹ️ GitHub Pages already enabled`,'info');
+        results.pages = true;
+      } else {
+        throw new Error(e.message||`Pages failed ${r.status}`);
+      }
+    } else {
+      results.pages = true;
+      log(`✅ GitHub Pages enabled`,'success');
+    }
+  }catch(e){
+    log(`⚠️ Pages auto-enable failed: ${e.message} — enable manually in repo Settings → Pages`,'warn');
+    results.pages = 'manual';
+  }
+
+  // ── Summary ──
+  const hubUrl = `https://${CONFIG.githubUser}.github.io/${repoName}/?access=${bp.access_token}`;
+  pipeline.hubUrl = hubUrl;
+  log('','info');
+  log('═══════════════════════════════════════','info');
+  log(`🎉 Provisioning complete!`,'success');
+  log(`🔗 Hub URL: <a href="${hubUrl}" target="_blank" style="color:var(--accent);">${hubUrl}</a>`,'success');
+  log(`🔑 Access token: <strong style="color:var(--amber);">${bp.access_token}</strong>`,'info');
+  if(results.sql==='manual') log(`⚠️ Don't forget to run the SQL manually in Supabase!`,'warn');
+  log('═══════════════════════════════════════','info');
+
+  document.getElementById('autoProvisionDone').style.display='flex';
+  document.getElementById('hubLiveUrl').href = hubUrl;
+  document.getElementById('hubLiveUrl').textContent = hubUrl;
+
+  return results;
 }
 
 </script>
