@@ -518,7 +518,7 @@ async function testProxy(){
     const resp = await fetch(proxyUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
     });
     const d = await resp.json();
     console.log('testProxy response:', d);
