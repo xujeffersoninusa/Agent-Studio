@@ -322,8 +322,9 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
         </div>
         <div class="btn-row">
           <button class="btn-primary" onclick="runIntake()">🤖 Generate Blueprint →</button>
+          <button class="btn-secondary" onclick="generateBlueprintLocally()" style="font-size:12px;">⚡ Generate (no AI)</button>
           <button class="btn-ghost" onclick="clearIntake()">Clear</button>
-          <button class="btn-secondary" onclick="testProxy()" style="font-size:12px;">🔌 Test AI connection</button>
+          <button class="btn-secondary" onclick="testProxy()" style="font-size:12px;">🔌 Test AI</button>
           <span id="intakeStatus" style="font-size:12px;color:var(--muted);"></span>
         </div>
         <div id="intakeThinking" style="display:none;margin-top:16px;">
@@ -461,6 +462,49 @@ function fillExample(key){
 
 function clearIntake(){
   ['iName','iTeam','iProduct','iPurpose','iTypes','iFields','iFilters','iNotes'].forEach(id=>document.getElementById(id).value='');
+}
+
+function generateBlueprintLocally(){
+  const name  = document.getElementById('iName').value.trim();
+  const team  = document.getElementById('iTeam').value.trim();
+  const purpose = document.getElementById('iPurpose').value.trim();
+  if(!name||!team||!purpose){toast('Please fill in Hub name, Team, and Purpose','error');return;}
+  const types = document.getElementById('iTypes').value
+    ? document.getElementById('iTypes').value.split(',').map(s=>s.trim()).filter(Boolean)
+    : ['Issue','Feature Request','Project Action','Customer Request'];
+  const filters = document.getElementById('iFilters').value
+    ? document.getElementById('iFilters').value.split(',').map(s=>s.trim()).filter(Boolean)
+    : ['type','priority','status'];
+  const extraRaw = document.getElementById('iFields').value;
+  const extra_fields = extraRaw ? extraRaw.split('
+').filter(l=>l.trim()).map(l=>{
+    const p=l.split('|'); return{name:p[0].trim().toLowerCase().replace(/\s+/g,'_'),label:p[0].trim(),type:p[1]?.trim()||'text'};
+  }) : [];
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  const token = team.toLowerCase().replace(/[^a-z0-9]+/g,'')+'+teradyne+2026';
+  const themes = ['blue','teal','violet','green','amber'];
+  const theme  = themes[name.length % themes.length];
+  pipeline.blueprint = {
+    hub_id: slug,
+    hub_name: name,
+    team: team,
+    product: document.getElementById('iProduct').value||'',
+    purpose: purpose.slice(0,120),
+    access_token: token,
+    db_table: slug.replace(/-/g,'_')+'_actions',
+    color_theme: theme,
+    action_types: types,
+    standard_fields:['title','account','priority','status','due','owner','description','checklist','project','bucket'],
+    extra_fields: extra_fields,
+    banner_filters: filters,
+    kpi_cards:['total','urgent','late','owners'],
+    board_lanes:['Not Started','On Track','At Risk','Done'],
+    ai_persona:`I am the AI agent for ${name} at Teradyne. I help ${team} manage actions, analyze risks, and track priorities. I can query live data, create actions, and provide status summaries.`
+  };
+  renderBlueprint(pipeline.blueprint);
+  markStepDone(1);
+  goStep(2);
+  toast('Blueprint generated locally ✓','success');
 }
 
 async function testProxy(){
