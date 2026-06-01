@@ -966,6 +966,8 @@ function checkCredentials(){
   }
   return true;
 }
+
+function copyBlueprint(){
   if(pipeline.blueprint){
     navigator.clipboard.writeText(JSON.stringify(pipeline.blueprint,null,2));
     toast('Blueprint JSON copied ✓','success');
