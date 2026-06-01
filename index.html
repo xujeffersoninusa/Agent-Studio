@@ -509,31 +509,30 @@ function generateBlueprintLocally(){
 
 async function testProxy(){
   const status = document.getElementById('intakeStatus');
-  status.textContent = '🔌 Testing connection…';
+  status.textContent = '🔌 Testing…';
   status.style.color = 'var(--muted)';
+  // Force reload config from localStorage
+  const stored = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  const proxyUrl = stored.proxyUrl || CONFIG.proxyUrl || 'https://rapid-pine-a057.xujefferson.workers.dev';
+  console.log('testProxy using URL:', proxyUrl);
   try{
-    const apiUrl = CONFIG.proxyUrl || 'https://api.anthropic.com/v1/messages';
-    const apiHeaders = CONFIG.proxyUrl
-      ? {'Content-Type':'application/json'}
-      : {'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
-    const resp = await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({
-      model:'claude-sonnet-4-5',max_tokens:20,
-      messages:[{role:'user',content:'Say OK'}]
-    })});
-    if(!resp.ok){
-      const e=await resp.json().catch(()=>({}));
-      throw new Error(e.error?.message||`HTTP ${resp.status}`);
-    }
+    const resp = await fetch(proxyUrl,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+    });
     const d = await resp.json();
+    console.log('testProxy response:', d);
+    if(!resp.ok) throw new Error(d.error?.message||`HTTP ${resp.status}`);
     const reply = d.content?.find(b=>b.type==='text')?.text||'?';
-    status.textContent = '✅ Connected! Claude replied: '+reply;
+    status.textContent = '✅ Connected! Reply: '+reply;
     status.style.color = 'var(--green)';
-    toast('AI connection working ✓','success');
+    toast('AI working ✓','success');
   }catch(e){
-    status.textContent = '❌ Failed: '+e.message;
+    status.textContent = '❌ '+e.message;
     status.style.color = 'var(--red)';
-    toast('Connection failed: '+e.message.slice(0,80),'error');
-    console.error('testProxy:',e);
+    toast(e.message.slice(0,80),'error');
+    console.error('testProxy error:',e);
   }
 }
 
