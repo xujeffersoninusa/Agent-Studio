@@ -518,7 +518,7 @@ async function testProxy(){
     const resp = await fetch(proxyUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+      body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
     });
     const d = await resp.json();
     console.log('testProxy response:', d);
@@ -1457,8 +1457,8 @@ async function autoProvision(bp, sql, html){
   };
 
   const results = {sql:false, repo:false, upload:false, pages:false};
-
-  // ── Step A: Run SQL in Supabase ──
+  const repoName = bp.hub_id+'-hub';
+  const hubUrl = `https://${CONFIG.githubUser}.github.io/${repoName}/?access=${bp.access_token}`;
   log('🗄️ Running SQL schema in Supabase…');
   try{
     const r = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/database/query`,{
@@ -1484,7 +1484,6 @@ async function autoProvision(bp, sql, html){
   }
 
   // ── Step B: Create GitHub repo ──
-  const repoName = bp.hub_id+'-hub';
   log(`📁 Creating GitHub repository: ${repoName}…`);
   try{
     const r = await fetch(`https://api.github.com/user/repos`,{
@@ -1612,7 +1611,6 @@ async function autoProvision(bp, sql, html){
   }
 
   // ── Summary ──
-  const hubUrl = `https://${CONFIG.githubUser}.github.io/${repoName}/?access=${bp.access_token}`;
   pipeline.hubUrl = hubUrl;
   log('','info');
   log('═══════════════════════════════════════','info');
