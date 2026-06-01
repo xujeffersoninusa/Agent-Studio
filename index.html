@@ -511,11 +511,14 @@ Generate a JSON spec with EXACTLY this structure (respond with JSON only, no mar
   try{
     const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';
     const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
-    const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
-    if(!resp.ok)throw new Error(`API ${resp.status}`);
+    const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    if(!resp.ok){
+      const errData=await resp.json().catch(()=>({}));
+      throw new Error(errData.error?.message||`API error ${resp.status}`);
+    }
     const data=await resp.json();
     const text=data.content?.find(b=>b.type==='text')?.text||'';
-    const clean=text.replace(/```json|```/g,'').trim();
+    const clean=text.replace(/```json[\n]?|```[\n]?/g,'').trim();
     pipeline.blueprint=JSON.parse(clean);
     document.getElementById('intakeThinking').style.display='none';
     renderBlueprint(pipeline.blueprint);
@@ -524,8 +527,10 @@ Generate a JSON spec with EXACTLY this structure (respond with JSON only, no mar
     toast('Blueprint generated ✓','success');
   }catch(e){
     document.getElementById('intakeThinking').style.display='none';
-    toast('Error: '+e.message,'error');
-    console.error(e);
+    document.getElementById('intakeStatus').textContent='❌ '+e.message;
+    document.getElementById('intakeStatus').style.color='var(--red)';
+    toast('Error: '+e.message.slice(0,100),'error');
+    console.error('runIntake error:',e);
   }
 }
 
@@ -776,7 +781,7 @@ Respond with ONLY the complete HTML file, no explanation.`;
 
   const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';
   const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
-  const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})});
+  const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5-20251022',max_tokens:8000,messages:[{role:'user',content:prompt}]})});
   if(!resp.ok)throw new Error(`API ${resp.status}`);
   const data=await resp.json();
   return data.content?.find(b=>b.type==='text')?.text||'';
