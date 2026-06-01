@@ -323,6 +323,7 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
         <div class="btn-row">
           <button class="btn-primary" onclick="runIntake()">🤖 Generate Blueprint →</button>
           <button class="btn-ghost" onclick="clearIntake()">Clear</button>
+          <button class="btn-secondary" onclick="testProxy()" style="font-size:12px;">🔌 Test AI connection</button>
           <span id="intakeStatus" style="font-size:12px;color:var(--muted);"></span>
         </div>
         <div id="intakeThinking" style="display:none;margin-top:16px;">
@@ -460,6 +461,36 @@ function fillExample(key){
 
 function clearIntake(){
   ['iName','iTeam','iProduct','iPurpose','iTypes','iFields','iFilters','iNotes'].forEach(id=>document.getElementById(id).value='');
+}
+
+async function testProxy(){
+  const status = document.getElementById('intakeStatus');
+  status.textContent = '🔌 Testing connection…';
+  status.style.color = 'var(--muted)';
+  try{
+    const apiUrl = CONFIG.proxyUrl || 'https://api.anthropic.com/v1/messages';
+    const apiHeaders = CONFIG.proxyUrl
+      ? {'Content-Type':'application/json'}
+      : {'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
+    const resp = await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({
+      model:'claude-sonnet-4-5-20251022',max_tokens:20,
+      messages:[{role:'user',content:'Say OK'}]
+    })});
+    if(!resp.ok){
+      const e=await resp.json().catch(()=>({}));
+      throw new Error(e.error?.message||`HTTP ${resp.status}`);
+    }
+    const d = await resp.json();
+    const reply = d.content?.find(b=>b.type==='text')?.text||'?';
+    status.textContent = '✅ Connected! Claude replied: '+reply;
+    status.style.color = 'var(--green)';
+    toast('AI connection working ✓','success');
+  }catch(e){
+    status.textContent = '❌ Failed: '+e.message;
+    status.style.color = 'var(--red)';
+    toast('Connection failed: '+e.message.slice(0,80),'error');
+    console.error('testProxy:',e);
+  }
 }
 
 // ── STEP 1: Intake → Blueprint ──
