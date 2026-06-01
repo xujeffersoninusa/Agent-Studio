@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ActionHub Agent Studio — Teradyne</title>
+<style>
+body.sec-pending *{display:none!important;}
+body.sec-pending .sec-block{display:flex!important;}
+body.sec-blocked *{display:none!important;}
+body.sec-blocked .sec-block{display:flex!important;}
+.sec-block{max-width:560px;margin:80px auto;padding:32px;border:1px solid #3a4060;border-radius:16px;background:#1a1f35;text-align:center;font-family:system-ui,sans-serif;flex-direction:column;align-items:center;}
+.sec-block h2{margin:0 0 12px;color:#f87171;font-size:22px;}
+.sec-block p{color:#7e8ba8;font-size:14px;margin:6px 0;}
+</style>
+<script>
+(function(){
+  var S={validToken:'jeffersonxuinteradyne',allowDirect:true};
+  function block(t,m){document.body.classList.remove('sec-pending');document.body.classList.add('sec-blocked');document.body.insertAdjacentHTML('afterbegin','<div class="sec-block"><span style="font-size:44px">🔒</span><h2>'+t+'</h2><p>'+m+'</p></div>');}
+  function allow(){document.body.classList.remove('sec-pending','sec-blocked');}
+  function check(){var token=new URLSearchParams(location.search).get('access');if(S.allowDirect&&token===S.validToken){allow();return;}block('Access Denied','Jefferson only. Use ?access=jeffersonxuinteradyne');}
+  document.addEventListener('DOMContentLoaded',check);
+})();
+</script>
+<style>
+:root{
+  --bg:#0f1320;--surface:#161c2e;--surface2:#1e2540;--card:#161c2e;
+  --ink:#e8edf8;--muted:#7e8ba8;--line:#2a3350;
+  --accent:#60a5fa;--accent-s:#0d1f3d;
+  --green:#34d399;--green-s:#0a2e1e;
+  --amber:#fbbf24;--amber-s:#2e2008;
+  --red:#f87171;--red-s:#2e1010;
+  --violet:#a78bfa;--violet-s:#1a0d3d;
+  --shadow:0 4px 28px rgba(0,0,0,.5);--radius:14px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);}
+
+/* ── Topbar ── */
+#topbar{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,13,28,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(14px);z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:16px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand h1{margin:0;font-size:17px;font-weight:800;}
+.studio-badge{font-size:11px;font-weight:700;color:var(--violet);background:var(--violet-s);border:1px solid rgba(167,139,250,.3);border-radius:6px;padding:3px 10px;}
+.nav-tabs{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:4px;}
+.nav-tab{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);text-decoration:none;transition:all .15s;border:none;background:transparent;}
+.nav-tab:hover{background:var(--surface);color:var(--ink);}
+.nav-tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+.nav-tab.port{color:var(--accent);}
+
+/* ── Shell ── */
+.shell{padding:76px 24px 40px;max-width:1400px;margin:0 auto;}
+
+/* ── Pipeline header ── */
+.pipeline-steps{display:flex;align-items:center;gap:0;margin-bottom:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:6px;overflow-x:auto;}
+.step-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 20px;border-radius:10px;cursor:pointer;border:none;background:transparent;color:var(--muted);font:inherit;transition:all .15s;white-space:nowrap;position:relative;min-width:130px;}
+.step-btn:hover{background:var(--surface2);color:var(--ink);}
+.step-btn.active{background:var(--accent-s);color:var(--accent);}
+.step-btn.done{background:var(--green-s);color:var(--green);}
+.step-btn.done::after{content:'✓';position:absolute;top:6px;right:10px;font-size:11px;}
+.step-num{font-size:18px;font-weight:900;line-height:1;}
+.step-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.step-arrow{color:var(--line);font-size:18px;flex-shrink:0;padding:0 4px;}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+.card-head{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:space-between;}
+.card-head h2{margin:0;font-size:16px;font-weight:800;}
+.card-body{padding:20px;}
+
+/* ── Step panels ── */
+.step-panel{display:none;}
+.step-panel.active{display:block;}
+
+/* ── Intake form ── */
+.intake-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+input,select,textarea{width:100%;padding:10px 13px;border-radius:9px;border:1px solid var(--line);background:#0f1320;color:var(--ink);font:inherit;font-size:13px;}
+textarea{resize:vertical;}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(96,165,250,.15);}
+input::placeholder,textarea::placeholder{color:var(--muted);}
+select option{background:var(--surface2);}
+.field{margin-bottom:14px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.example-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.echip{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);cursor:pointer;transition:all .13s;}
+.echip:hover{background:var(--accent-s);color:var(--accent);border-color:rgba(96,165,250,.4);}
+
+/* ── Blueprint display ── */
+.blueprint-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.spec-section{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
+.spec-section h3{margin:0 0 12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
+.spec-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);gap:12px;}
+.spec-row:last-child{border-bottom:none;}
+.spec-key{font-size:12px;color:var(--muted);font-weight:600;min-width:120px;flex-shrink:0;}
+.spec-val{font-size:13px;color:var(--ink);font-weight:600;text-align:right;}
+.spec-val.editable{background:transparent;border:none;color:var(--ink);font-weight:600;font:inherit;font-size:13px;text-align:right;border-bottom:1px dashed var(--line);padding:0;}
+.spec-val.editable:focus{outline:none;border-bottom-color:var(--accent);}
+.col-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;margin:2px;}
+.col-core{background:var(--accent-s);color:var(--accent);border:1px solid rgba(96,165,250,.3);}
+.col-extra{background:var(--violet-s);color:var(--violet);border:1px solid rgba(167,139,250,.3);}
+.col-system{background:var(--surface2);color:var(--muted);border:1px solid var(--line);}
+
+/* ── Code output ── */
+.code-tabs{display:flex;gap:4px;margin-bottom:0;border-bottom:1px solid var(--line);padding:0 16px;background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;}
+.code-tab{padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
+.code-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.code-block{background:#0a0d18;border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:16px 18px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.6;color:#a8b8d0;max-height:420px;overflow:auto;white-space:pre;}
+.copy-btn{font-size:11px;padding:5px 11px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:7px;cursor:pointer;transition:all .13s;}
+.copy-btn:hover{background:var(--accent-s);color:var(--accent);}
+
+/* ── Validation checklist ── */
+.check-list{display:flex;flex-direction:column;gap:10px;}
+.check-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);}
+.check-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.check-content{flex:1;}
+.check-title{font-size:13px;font-weight:700;margin-bottom:3px;}
+.check-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+.check-status{display:flex;align-items:center;gap:6px;margin-top:8px;}
+.status-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;}
+.sp-pending{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
+.sp-pass{background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+.sp-warn{background:var(--amber-s);color:var(--amber);border:1px solid rgba(251,191,36,.3);}
+
+/* ── Buttons ── */
+button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 16px;font-weight:700;font:inherit;font-size:13px;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#05192a;}
+.btn-primary:hover{background:#93c5fd;box-shadow:0 0 0 3px rgba(96,165,250,.2);}
+.btn-secondary{background:var(--surface2);color:var(--accent);border:1px solid rgba(96,165,250,.3);}
+.btn-secondary:hover{background:var(--accent-s);}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-success{background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+.btn-success:hover{background:#0d3d27;}
+.btn-row{display:flex;gap:10px;align-items:center;margin-top:20px;}
+
+/* ── AI thinking ── */
+.ai-thinking{display:flex;align-items:center;gap:10px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--accent-s);color:var(--accent);font-size:13px;}
+.think-dots span{animation:blink 1.4s infinite;font-size:20px;line-height:1;}
+.think-dots span:nth-child(2){animation-delay:.2s;}
+.think-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 20px;font-size:13px;z-index:600;transition:transform .3s;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.success{border-color:rgba(52,211,153,.4);color:var(--green);}
+#toast.error{border-color:rgba(248,113,113,.4);color:var(--red);}
+
+/* ── Responsive ── */
+@media(max-width:900px){.intake-layout,.blueprint-layout,.field-row{grid-template-columns:1fr;}}
+</style>
+</head>
+<body class="sec-pending">
+<div id="toast"></div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="brand">
+    <svg width="100" height="26" viewBox="0 0 220 56" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="56" height="56" rx="6" fill="#e31837"/>
+      <rect x="12" y="10" width="32" height="8" rx="2" fill="#fff"/>
+      <rect x="22" y="18" width="12" height="28" rx="2" fill="#fff"/>
+      <text x="66" y="40" font-family="'Segoe UI',Arial,sans-serif" font-size="30" font-weight="700" fill="#e8edf8">TERADYNE</text>
+    </svg>
+    <div style="width:1px;height:22px;background:var(--line);margin:0 6px;"></div>
+    <h1>Agent Studio</h1>
+    <span class="studio-badge">Hub Builder · Jefferson Only</span>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab port" href="https://xujeffersoninusa.github.io/Portfolio-Hub/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>
+    <a class="nav-tab" href="https://xujeffersoninusa.github.io/uLED/?access=jeffersonxuinteradyne" target="_blank">🔵 uLED Hub</a>
+    <a class="nav-tab" href="https://xujeffersoninusa.github.io/ImageSensor/?access=imgsensorteradyne2026" target="_blank">🟣 IS Hub</a>
+    <span class="nav-tab active">🤖 Agent Studio</span>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span style="font-size:11px;color:var(--muted);">Logged in as Jefferson Xu</span>
+  </div>
+</div>
+
+<div class="shell">
+  <!-- Pipeline stepper -->
+  <div class="pipeline-steps">
+    <button class="step-btn active" id="stepBtn1" onclick="goStep(1)">
+      <span class="step-num">①</span>
+      <span class="step-label">Intake</span>
+    </button>
+    <span class="step-arrow">›</span>
+    <button class="step-btn" id="stepBtn2" onclick="goStep(2)">
+      <span class="step-num">②</span>
+      <span class="step-label">Blueprint</span>
+    </button>
+    <span class="step-arrow">›</span>
+    <button class="step-btn" id="stepBtn3" onclick="goStep(3)">
+      <span class="step-num">③</span>
+      <span class="step-label">Review</span>
+    </button>
+    <span class="step-arrow">›</span>
+    <button class="step-btn" id="stepBtn4" onclick="goStep(4)">
+      <span class="step-num">④</span>
+      <span class="step-label">Provision</span>
+    </button>
+    <span class="step-arrow">›</span>
+    <button class="step-btn" id="stepBtn5" onclick="goStep(5)">
+      <span class="step-num">⑤</span>
+      <span class="step-label">Validate</span>
+    </button>
+  </div>
+
+  <!-- ═══ STEP 1: INTAKE ═══ -->
+  <div class="step-panel active" id="step1">
+    <div class="card">
+      <div class="card-head">
+        <h2>① Intake Agent — Describe Your Hub</h2>
+        <span style="font-size:12px;color:var(--muted);">Plain English → Structured spec</span>
+      </div>
+      <div class="card-body">
+        <div class="intake-layout">
+          <div>
+            <div class="field">
+              <label>Hub name *</label>
+              <input id="iName" placeholder="e.g. Memory Escalation Hub"/>
+            </div>
+            <div class="field">
+              <label>Team *</label>
+              <input id="iTeam" placeholder="e.g. Memory Business Unit"/>
+            </div>
+            <div class="field-row">
+              <div>
+                <label>Product / domain</label>
+                <input id="iProduct" placeholder="e.g. HBM4, DDR6"/>
+              </div>
+              <div>
+                <label>Approx. team size</label>
+                <select id="iSize">
+                  <option value="small">Small (2-5 people)</option>
+                  <option value="medium" selected>Medium (6-15 people)</option>
+                  <option value="large">Large (15+ people)</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Purpose — what problem does this hub solve? *</label>
+              <textarea id="iPurpose" rows="3" placeholder="e.g. Track customer escalations, engineering issues, and roadmap commitments across Memory products. PM, Engineering, and Sales all need visibility."></textarea>
+            </div>
+            <div class="field">
+              <label>Action types needed</label>
+              <input id="iTypes" placeholder="e.g. Issue, Escalation, Roadmap Item, Customer Request"/>
+              <div class="hint">Comma-separated. Leave blank and AI will suggest.</div>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label>Extra fields beyond standard (title, account, priority, status, due, owner)</label>
+              <textarea id="iFields" rows="4" placeholder="e.g. Chip generation (HBM3/HBM4), Engineering lead, Sales contact, Customer severity level, RMA number..."></textarea>
+              <div class="hint">Describe in plain English. AI will map to database columns.</div>
+            </div>
+            <div class="field">
+              <label>Key filters users need in the banner</label>
+              <input id="iFilters" placeholder="e.g. Chip generation, severity, account"/>
+            </div>
+            <div class="field">
+              <label>Anything else? (workflow, review cadence, integrations)</label>
+              <textarea id="iNotes" rows="3" placeholder="e.g. Weekly review on Thursdays. Need to track resolution ETA separately from due date. Some issues link to Jira tickets."></textarea>
+            </div>
+            <div class="field">
+              <label>Quick examples (click to auto-fill a template)</label>
+              <div class="example-chips">
+                <span class="echip" onclick="fillExample('memory')">Memory Escalation Hub</span>
+                <span class="echip" onclick="fillExample('yield')">Yield / Quality Hub</span>
+                <span class="echip" onclick="fillExample('soc')">SOC Platform Hub</span>
+                <span class="echip" onclick="fillExample('field')">Field Service Hub</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" onclick="runIntake()">🤖 Generate Blueprint →</button>
+          <button class="btn-ghost" onclick="clearIntake()">Clear</button>
+          <span id="intakeStatus" style="font-size:12px;color:var(--muted);"></span>
+        </div>
+        <div id="intakeThinking" style="display:none;margin-top:16px;">
+          <div class="ai-thinking">
+            <span>🤖 Intake Agent analyzing requirements</span>
+            <div class="think-dots"><span>•</span><span>•</span><span>•</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 2: BLUEPRINT ═══ -->
+  <div class="step-panel" id="step2">
+    <div class="card">
+      <div class="card-head">
+        <h2>② Blueprint Engine — Structured Spec</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="copy-btn" onclick="copyBlueprint()">📋 Copy spec JSON</button>
+          <button class="btn-secondary" onclick="goStep(3)">Review & Approve →</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="blueprintContent">
+          <div style="color:var(--muted);text-align:center;padding:40px;">Run the Intake Agent first to generate a blueprint.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3: REVIEW ═══ -->
+  <div class="step-panel" id="step3">
+    <div class="card">
+      <div class="card-head">
+        <h2>③ Review &amp; Approve Spec</h2>
+        <span style="font-size:12px;color:var(--muted);">Edit any field before provisioning</span>
+      </div>
+      <div class="card-body">
+        <div id="reviewContent">
+          <div style="color:var(--muted);text-align:center;padding:40px;">Complete Blueprint step first.</div>
+        </div>
+        <div class="btn-row" id="reviewBtnRow" style="display:none;">
+          <button class="btn-primary" onclick="runProvision()">⚡ Provision Hub →</button>
+          <button class="btn-ghost" onclick="goStep(2)">← Back to Blueprint</button>
+        </div>
+        <div id="provisionThinking" style="display:none;margin-top:16px;">
+          <div class="ai-thinking">
+            <span>⚡ Provisioning Agent generating SQL + HTML</span>
+            <div class="think-dots"><span>•</span><span>•</span><span>•</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4: PROVISION ═══ -->
+  <div class="step-panel" id="step4">
+    <div class="card">
+      <div class="card-head">
+        <h2>④ Provisioning Agent — Generated Artifacts</h2>
+        <button class="btn-secondary" onclick="goStep(5)">Validate →</button>
+      </div>
+      <div class="card-body" id="provisionContent">
+        <div style="color:var(--muted);text-align:center;padding:40px;">Complete Review step first.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 5: VALIDATE ═══ -->
+  <div class="step-panel" id="step5">
+    <div class="card">
+      <div class="card-head">
+        <h2>⑤ Validation Agent — Deployment Checklist</h2>
+        <button class="btn-success" id="btnPublish" onclick="publish()">✓ Mark as Published</button>
+      </div>
+      <div class="card-body">
+        <div id="validationContent">
+          <div style="color:var(--muted);text-align:center;padding:40px;">Complete Provisioning step first.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const CONFIG={
+  proxyUrl:'https://rapid-pine-a057.xujefferson.workers.dev',
+  claudeKey:''
+};
+const toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className=type?`show ${type}`:'show';setTimeout(()=>t.className='',3200);};
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let pipeline={step:1,blueprint:null,spec:null};
+
+// ── Step navigation ──
+function goStep(n){
+  document.querySelectorAll('.step-panel').forEach((p,i)=>{p.classList.toggle('active',i===n-1);});
+  document.querySelectorAll('.step-btn').forEach((b,i)=>{
+    b.classList.remove('active');
+    if(i*2===( n-1)*2) b.classList.add('active');
+  });
+  pipeline.step=n;
+}
+
+// ── Example templates ──
+const EXAMPLES={
+  memory:{name:'Memory Escalation Hub',team:'Memory Business Unit',product:'HBM4, DDR6',purpose:'Track customer escalations and engineering issues across HBM and DDR Memory products. PM, Engineering, and Sales need shared visibility with weekly review cadence.',types:'Escalation, Engineering Issue, Roadmap Item, Customer Request',fields:'Chip generation (HBM3/HBM4/DDR5/DDR6), Engineering lead, Customer severity (S1/S2/S3), RMA number, Jira ticket ID',filters:'Chip generation, Severity, Account',notes:'Weekly Thursday review. Track resolution ETA separately from due date.'},
+  yield:{name:'Yield & Quality Hub',team:'Quality Engineering',product:'All products',purpose:'Track yield excursions, quality escapes, and corrective actions across all product lines. Engineering and Operations need real-time visibility.',types:'Yield Excursion, Quality Escape, CAPA, Process Change',fields:'Product line, Fab site (Taiwan/US), Yield impact %, Lot numbers, Root cause category',filters:'Product line, Fab site, Root cause',notes:'Link to internal CAPA system. Auto-escalate if yield impact > 5%.'},
+  soc:{name:'SOC Platform Hub',team:'SOC Platform Engineering',product:'Eagle/Falcon SOC',purpose:'Manage platform enablement actions, customer bring-up issues, and software release commitments across SOC products.',types:'Platform Issue, Customer Bring-up, SW Release, Feature Request',fields:'SOC generation (Eagle/Falcon/Next-Gen), SW version, Customer bring-up stage, Platform component',filters:'SOC generation, Component, Customer',notes:'Track against quarterly release schedule. Engineering lead required for all SW items.'},
+  field:{name:'Field Service Hub',team:'Customer Field Engineering',product:'All systems',purpose:'Track field service actions, customer complaints, and system issues reported by field engineers worldwide.',types:'Field Issue, Customer Complaint, System Upgrade, Training Request',fields:'System model, Customer site location, Field engineer, Severity (Critical/High/Normal), Case number',filters:'System model, Severity, Location',notes:'SLA tracking required. Critical issues must be acknowledged within 4 hours.'},
+};
+
+function fillExample(key){
+  const e=EXAMPLES[key];
+  document.getElementById('iName').value=e.name;
+  document.getElementById('iTeam').value=e.team;
+  document.getElementById('iProduct').value=e.product;
+  document.getElementById('iPurpose').value=e.purpose;
+  document.getElementById('iTypes').value=e.types;
+  document.getElementById('iFields').value=e.fields;
+  document.getElementById('iFilters').value=e.filters;
+  document.getElementById('iNotes').value=e.notes;
+}
+
+function clearIntake(){
+  ['iName','iTeam','iProduct','iPurpose','iTypes','iFields','iFilters','iNotes'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── STEP 1: Intake → Blueprint ──
+async function runIntake(){
+  const name=document.getElementById('iName').value.trim();
+  const team=document.getElementById('iTeam').value.trim();
+  const purpose=document.getElementById('iPurpose').value.trim();
+  if(!name||!team||!purpose){toast('Please fill in Hub name, Team, and Purpose','error');return;}
+
+  document.getElementById('intakeThinking').style.display='block';
+  document.getElementById('intakeStatus').textContent='';
+
+  const prompt=`You are the Blueprint Engine for ActionHub OS — a system that creates operational action-tracking hubs for Teradyne teams.
+
+Based on this intake form, generate a complete hub specification as JSON.
+
+INTAKE:
+- Hub name: ${name}
+- Team: ${team}
+- Product/domain: ${document.getElementById('iProduct').value||'Not specified'}
+- Team size: ${document.getElementById('iSize').value}
+- Purpose: ${purpose}
+- Action types: ${document.getElementById('iTypes').value||'Suggest appropriate types'}
+- Extra fields: ${document.getElementById('iFields').value||'None specified'}
+- Key filters: ${document.getElementById('iFilters').value||'Suggest based on context'}
+- Notes: ${document.getElementById('iNotes').value||'None'}
+
+Generate a JSON spec with EXACTLY this structure (respond with JSON only, no markdown):
+{
+  "hub_id": "slug-format-id",
+  "hub_name": "...",
+  "team": "...",
+  "product": "...",
+  "purpose": "one sentence",
+  "access_token": "teamname+teradyne+2026 (lowercase, no spaces)",
+  "db_table": "hubid_actions",
+  "color_theme": "blue|teal|violet|green|amber",
+  "action_types": ["Type1","Type2","Type3","Type4"],
+  "standard_fields": ["title","account","priority","status","due","owner","description","checklist","project","bucket"],
+  "extra_fields": [
+    {"name": "field_name", "label": "Display Label", "type": "text|select|date", "options": ["opt1","opt2"] }
+  ],
+  "banner_filters": ["field1","field2","field3"],
+  "kpi_cards": ["total","urgent","late","owners"],
+  "board_lanes": ["Not Started","On Track","At Risk","Done"],
+  "ai_persona": "2-3 sentence description of what the AI agent should focus on for this hub"
+}`;
+
+  try{
+    const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';
+    const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
+    const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    if(!resp.ok)throw new Error(`API ${resp.status}`);
+    const data=await resp.json();
+    const text=data.content?.find(b=>b.type==='text')?.text||'';
+    const clean=text.replace(/```json|```/g,'').trim();
+    pipeline.blueprint=JSON.parse(clean);
+    document.getElementById('intakeThinking').style.display='none';
+    renderBlueprint(pipeline.blueprint);
+    markStepDone(1);
+    goStep(2);
+    toast('Blueprint generated ✓','success');
+  }catch(e){
+    document.getElementById('intakeThinking').style.display='none';
+    toast('Error: '+e.message,'error');
+    console.error(e);
+  }
+}
+
+function markStepDone(n){
+  const btn=document.getElementById(`stepBtn${n}`);
+  if(btn){btn.classList.remove('active');btn.classList.add('done');}
+}
+
+// ── STEP 2: Render Blueprint ──
+function renderBlueprint(bp){
+  const themeColors={blue:'#60a5fa',teal:'#2dd4bf',violet:'#a78bfa',green:'#34d399',amber:'#fbbf24'};
+  const tc=themeColors[bp.color_theme]||'#60a5fa';
+  document.getElementById('blueprintContent').innerHTML=`
+    <div class="blueprint-layout">
+      <div>
+        <div class="spec-section">
+          <h3>Hub Identity</h3>
+          <div class="spec-row"><span class="spec-key">Hub name</span><span class="spec-val">${esc(bp.hub_name)}</span></div>
+          <div class="spec-row"><span class="spec-key">Team</span><span class="spec-val">${esc(bp.team)}</span></div>
+          <div class="spec-row"><span class="spec-key">Product</span><span class="spec-val">${esc(bp.product||'—')}</span></div>
+          <div class="spec-row"><span class="spec-key">DB table</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${esc(bp.db_table)}</span></div>
+          <div class="spec-row"><span class="spec-key">Access token</span><span class="spec-val" style="font-family:monospace;font-size:12px;color:var(--amber);">${esc(bp.access_token)}</span></div>
+          <div class="spec-row"><span class="spec-key">Color theme</span><span class="spec-val"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${tc};display:inline-block;"></span>${esc(bp.color_theme)}</span></span></div>
+        </div>
+        <div class="spec-section">
+          <h3>Purpose</h3>
+          <div style="font-size:13px;color:var(--ink);line-height:1.6;">${esc(bp.purpose)}</div>
+        </div>
+        <div class="spec-section">
+          <h3>Action Types</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.action_types||[]).map(t=>`<span class="col-tag col-core">${esc(t)}</span>`).join('')}</div>
+        </div>
+        <div class="spec-section">
+          <h3>AI Agent Persona</h3>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;font-style:italic;">${esc(bp.ai_persona||'—')}</div>
+        </div>
+      </div>
+      <div>
+        <div class="spec-section">
+          <h3>Database Columns</h3>
+          <div style="margin-bottom:8px;"><span style="font-size:11px;color:var(--muted);">Standard fields (always included):</span><br/><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${(bp.standard_fields||[]).map(f=>`<span class="col-tag col-system">${esc(f)}</span>`).join('')}</div></div>
+          ${bp.extra_fields?.length?`<div><span style="font-size:11px;color:var(--muted);">Extra fields for this hub:</span><br/><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${bp.extra_fields.map(f=>`<span class="col-tag col-extra" title="${esc(f.type)}">${esc(f.label)}</span>`).join('')}</div></div>`:''}
+        </div>
+        <div class="spec-section">
+          <h3>Banner Quick Filters</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.banner_filters||[]).map(f=>`<span class="col-tag col-core">${esc(f)}</span>`).join('')}</div>
+        </div>
+        <div class="spec-section">
+          <h3>Board Lanes</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.board_lanes||[]).map(l=>`<span class="col-tag col-system">${esc(l)}</span>`).join('')}</div>
+        </div>
+        <div class="spec-section">
+          <h3>KPI Cards</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.kpi_cards||[]).map(k=>`<span class="col-tag col-extra">${esc(k)}</span>`).join('')}</div>
+        </div>
+      </div>
+    </div>`;
+  renderReview(bp);
+}
+
+// ── STEP 3: Review ──
+function renderReview(bp){
+  document.getElementById('reviewContent').innerHTML=`
+    <div style="margin-bottom:16px;padding:14px 16px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--muted);">
+      ✏️ Review the spec below. Edit any value before generating SQL + HTML. All fields are editable.
+    </div>
+    <div class="blueprint-layout">
+      <div>
+        <div class="spec-section">
+          <h3>Edit Hub Identity</h3>
+          <div class="spec-row"><span class="spec-key">Hub name</span><input class="spec-val editable" id="rName" value="${esc(bp.hub_name)}"/></div>
+          <div class="spec-row"><span class="spec-key">Team</span><input class="spec-val editable" id="rTeam" value="${esc(bp.team)}"/></div>
+          <div class="spec-row"><span class="spec-key">DB table</span><input class="spec-val editable" id="rTable" value="${esc(bp.db_table)}" style="font-family:monospace;font-size:12px;"/></div>
+          <div class="spec-row"><span class="spec-key">Access token</span><input class="spec-val editable" id="rToken" value="${esc(bp.access_token)}" style="font-family:monospace;font-size:12px;color:var(--amber);"/></div>
+          <div class="spec-row"><span class="spec-key">Color theme</span>
+            <select class="spec-val editable" id="rTheme" style="width:auto;padding:2px 8px;">
+              ${['blue','teal','violet','green','amber'].map(c=>`<option${c===bp.color_theme?' selected':''}>${c}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="spec-section">
+          <h3>Action Types (comma-separated)</h3>
+          <input id="rTypes" value="${esc((bp.action_types||[]).join(', '))}"/>
+        </div>
+        <div class="spec-section">
+          <h3>Banner Filters (comma-separated)</h3>
+          <input id="rFilters" value="${esc((bp.banner_filters||[]).join(', '))}"/>
+        </div>
+      </div>
+      <div>
+        <div class="spec-section">
+          <h3>Extra Fields (one per line: name|Label|type)</h3>
+          <textarea id="rFields" rows="8">${(bp.extra_fields||[]).map(f=>`${f.name}|${f.label}|${f.type}${f.options?'|'+f.options.join(','):''}`).join('\n')}</textarea>
+          <div class="hint">Format: field_name|Display Label|text (or: field_name|Label|select|opt1,opt2,opt3)</div>
+        </div>
+        <div class="spec-section">
+          <h3>AI Persona</h3>
+          <textarea id="rPersona" rows="3">${esc(bp.ai_persona||'')}</textarea>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('reviewBtnRow').style.display='flex';
+}
+
+// ── STEP 4: Provision → generate SQL + HTML ──
+async function runProvision(){
+  const bp={
+    ...pipeline.blueprint,
+    hub_name: document.getElementById('rName').value,
+    team:     document.getElementById('rTeam').value,
+    db_table: document.getElementById('rTable').value,
+    access_token: document.getElementById('rToken').value,
+    color_theme:  document.getElementById('rTheme').value,
+    action_types: document.getElementById('rTypes').value.split(',').map(s=>s.trim()).filter(Boolean),
+    banner_filters: document.getElementById('rFilters').value.split(',').map(s=>s.trim()).filter(Boolean),
+    extra_fields: parseExtraFields(document.getElementById('rFields').value),
+    ai_persona: document.getElementById('rPersona').value,
+  };
+  pipeline.spec=bp;
+
+  document.getElementById('provisionThinking').style.display='block';
+  document.getElementById('reviewBtnRow').style.display='none';
+
+  try{
+    const [sql, html] = await Promise.all([generateSQL(bp), generateHTML(bp)]);
+    pipeline.generatedSQL = sql;
+    pipeline.generatedHTML = html;
+    document.getElementById('provisionThinking').style.display='none';
+    renderProvision(bp, sql, html);
+    markStepDone(1);markStepDone(2);markStepDone(3);
+    goStep(4);
+    toast('SQL + HTML generated ✓','success');
+  }catch(e){
+    document.getElementById('provisionThinking').style.display='none';
+    document.getElementById('reviewBtnRow').style.display='flex';
+    toast('Provision failed: '+e.message,'error');
+    console.error(e);
+  }
+}
+
+function parseExtraFields(text){
+  return text.split('\n').filter(l=>l.trim()).map(l=>{
+    const parts=l.split('|');
+    const f={name:parts[0]?.trim()||'',label:parts[1]?.trim()||'',type:parts[2]?.trim()||'text'};
+    if(parts[3])f.options=parts[3].split(',').map(s=>s.trim());
+    return f;
+  }).filter(f=>f.name&&f.label);
+}
+
+async function generateSQL(bp){
+  const extraCols=(bp.extra_fields||[]).map(f=>`  ${f.name.replace(/\s+/g,'_').toLowerCase()}  text`).join(',\n');
+  return `-- ═══════════════════════════════════════════════════
+-- ActionHub OS — ${bp.hub_name} Schema
+-- Generated by Agent Studio · ${new Date().toLocaleDateString()}
+-- ═══════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS ${bp.db_table} (
+  id            uuid primary key default gen_random_uuid(),
+  title         text not null,
+  account       text,
+  priority      text default '3-Important',
+  status        text default 'Not Started',
+  due           date,
+  owner         text,
+  description   text,
+  checklist     jsonb default '[]',
+  project       text,
+  bucket        text,
+  type          text,${extraCols?'\n'+extraCols+',':''}
+  version_no    integer default 1,
+  modified_by   text,
+  modified_at   timestamptz default now(),
+  created_at    timestamptz default now(),
+  is_deleted    boolean default false
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_account  ON ${bp.db_table}(account);
+CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_owner    ON ${bp.db_table}(owner);
+CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_status   ON ${bp.db_table}(status);
+CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_due      ON ${bp.db_table}(due);
+CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_deleted  ON ${bp.db_table}(is_deleted);
+
+-- Row Level Security
+ALTER TABLE ${bp.db_table} ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon full access ${bp.db_table}"
+  ON ${bp.db_table} FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- Auto-update timestamp
+CREATE OR REPLACE TRIGGER ${bp.db_table}_updated_at
+  BEFORE UPDATE ON ${bp.db_table}
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Register in hub registry
+INSERT INTO hub_registry (id, name, team, product, purpose, token, db_table, status, owner)
+VALUES (
+  '${bp.hub_id}',
+  '${bp.hub_name}',
+  '${bp.team}',
+  '${bp.product||''}',
+  '${bp.purpose||''}',
+  '${bp.access_token}',
+  '${bp.db_table}',
+  'live',
+  'jefferson.xu@teradyne.com'
+) ON CONFLICT (id) DO NOTHING;
+
+-- Verify
+SELECT COUNT(*) as columns_created FROM information_schema.columns
+WHERE table_name = '${bp.db_table}' AND table_schema = 'public';`;
+}
+
+async function generateHTML(bp){
+  const prompt=`You are the Provisioning Agent for ActionHub OS. Generate a complete, production-ready single-file HTML hub based on this spec.
+
+SPEC:
+${JSON.stringify(bp, null, 2)}
+
+BASE TEMPLATE REQUIREMENTS:
+- Use the same architecture as the existing uLED Hub (Supabase REST API, Claude AI agent via proxy, security gate)
+- Supabase URL: https://cqgzndwisonvnlsxicmd.supabase.co
+- Supabase key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZ3puZHdpc29udm5sc3hpY21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDQzOTksImV4cCI6MjA5NTcyMDM5OX0.nOCt3ddBWhzXGzqcpVvBvNboBro3xFgmpS7F-ZMHXpE
+- Proxy URL: https://rapid-pine-a057.xujefferson.workers.dev
+- Security token: ${bp.access_token}
+- DB table: ${bp.db_table}
+- Color theme: ${bp.color_theme} (use appropriate CSS variables)
+- Action types: ${(bp.action_types||[]).join(', ')}
+- Extra fields: ${JSON.stringify(bp.extra_fields||[])}
+- Banner filters include: ${(bp.banner_filters||[]).join(', ')} plus standard Priority, Status, Due
+- AI persona: ${bp.ai_persona}
+
+REQUIREMENTS:
+1. Complete working HTML file with all CSS and JS inline
+2. Teradyne logo SVG in topbar
+3. Fixed topbar + 2-row KPI bar (row1: KPI numbers, row2: filter buttons)
+4. Left filter panel (300px) + right content area (table + board views)
+5. Table columns: expand, title, account, ${(bp.extra_fields||[]).slice(0,3).map(f=>f.label).join(', ')}, type, priority, status, due, owner, checklist
+6. Board view with 5 lanes: Not Started, On Track, At Risk/Late, No Finish Date, Done
+7. Action editor modal with all standard + extra fields
+8. AI chat panel (right slide-in) with hub-specific quick actions
+9. Auto-overdue detection (past due → Overdue status)
+10. Supabase CRUD (create, read, update, soft-delete)
+11. Export CSV
+12. Deep-link support: ?openAction=id auto-opens editor
+13. Navigation tabs linking to Portfolio and other hubs
+
+Respond with ONLY the complete HTML file, no explanation.`;
+
+  const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';
+  const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
+  const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:8000,messages:[{role:'user',content:prompt}]})});
+  if(!resp.ok)throw new Error(`API ${resp.status}`);
+  const data=await resp.json();
+  return data.content?.find(b=>b.type==='text')?.text||'';
+}
+
+function renderProvision(bp, sql, html){
+  let activeCode='sql';
+  const switchCode=(tab)=>{
+    activeCode=tab;
+    document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
+    document.getElementById('codeOutput').textContent = tab==='sql' ? sql : html;
+  };
+  document.getElementById('provisionContent').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:20px;">
+      <div>
+        <div class="spec-section">
+          <h3>Generated Artifacts</h3>
+          <div class="spec-row"><span class="spec-key">Hub</span><span class="spec-val">${esc(bp.hub_name)}</span></div>
+          <div class="spec-row"><span class="spec-key">DB table</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${esc(bp.db_table)}</span></div>
+          <div class="spec-row"><span class="spec-key">Access token</span><span class="spec-val" style="font-family:monospace;font-size:12px;color:var(--amber);">${esc(bp.access_token)}</span></div>
+          <div class="spec-row"><span class="spec-key">SQL lines</span><span class="spec-val">${sql.split('\n').length}</span></div>
+          <div class="spec-row"><span class="spec-key">HTML lines</span><span class="spec-val">${html.split('\n').length}</span></div>
+        </div>
+        <div class="spec-section">
+          <h3>Deploy Steps</h3>
+          <div style="font-size:12px;color:var(--muted);line-height:2;">
+            1. Copy SQL → run in Supabase<br/>
+            2. Copy HTML → save as <code style="color:var(--accent)">index.html</code><br/>
+            3. Upload to new GitHub repo<br/>
+            4. Enable GitHub Pages<br/>
+            5. Access via token URL<br/>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+          <button class="btn-primary" onclick="downloadFile('sql')">⬇ Download SQL</button>
+          <button class="btn-primary" onclick="downloadFile('html')">⬇ Download HTML</button>
+        </div>
+      </div>
+      <div>
+        <div class="code-tabs">
+          <span class="code-tab active" data-tab="sql" onclick="document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='sql'));document.getElementById('codeOutput').textContent=pipeline.generatedSQL;">SQL Schema</span>
+          <span class="code-tab" data-tab="html" onclick="document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='html'));document.getElementById('codeOutput').textContent=pipeline.generatedHTML;">HTML App</span>
+          <div style="flex:1;"></div>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('codeOutput').textContent);toast('Copied ✓','success')">📋 Copy</button>
+        </div>
+        <div class="code-block" id="codeOutput">${esc(sql)}</div>
+      </div>
+    </div>`;
+  renderValidation(bp);
+}
+
+function downloadFile(type){
+  const content = type==='sql' ? pipeline.generatedSQL : pipeline.generatedHTML;
+  const filename = type==='sql' ? `${pipeline.spec.db_table}_schema.sql` : `${pipeline.spec.hub_id}_hub.html`;
+  const a=document.createElement('a');
+  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content);
+  a.download=filename; a.click();
+}
+
+function renderValidation(bp){
+  const checks=[
+    {icon:'🗄️',title:'Run SQL in Supabase',desc:`Go to Supabase → SQL Editor → paste the SQL schema → Run. Creates table <code style="color:var(--accent)">${bp.db_table}</code> and registers hub in hub_registry.`,status:'pending'},
+    {icon:'📁',title:'Create GitHub repository',desc:`Create a new public repo named something like <code style="color:var(--accent)">${bp.hub_id}-hub</code> under xujeffersoninusa.`,status:'pending'},
+    {icon:'⬆️',title:'Upload HTML as index.html',desc:'Save the generated HTML as index.html and upload to the new repo root.',status:'pending'},
+    {icon:'🌐',title:'Enable GitHub Pages',desc:'Repo Settings → Pages → Deploy from branch → main → / (root) → Save.',status:'pending'},
+    {icon:'🔐',title:'Test security gate',desc:`Open the URL WITHOUT the token — should show Access Denied. Then add <code style="color:var(--accent)">?access=${bp.access_token}</code> — should load the hub.`,status:'pending'},
+    {icon:'✅',title:'Test CRUD operations',desc:'Create a test action, edit it, verify it appears in Supabase Table Editor, then delete it.',status:'pending'},
+    {icon:'🤖',title:'Test AI agent',desc:'Open the AI chat panel, ask "summarize all actions" — should respond with hub data.',status:'pending'},
+    {icon:'📊',title:'Register in Portfolio Dashboard',desc:`Add the new hub URL to portfolio_hub.html CONFIG.hubs array and update the nav tabs. Hub URL: <code style="color:var(--accent)">https://xujeffersoninusa.github.io/${bp.hub_id}-hub/?access=${bp.access_token}</code>`,status:'pending'},
+  ];
+  document.getElementById('validationContent').innerHTML=`
+    <div style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
+      <div style="font-size:13px;color:var(--muted);">Check each item as you complete it. The hub for <strong style="color:var(--ink);">${esc(bp.hub_name)}</strong> is ready to deploy.</div>
+    </div>
+    <div class="check-list">${checks.map((c,i)=>`
+      <div class="check-row" id="vcheck${i}">
+        <div class="check-icon">${c.icon}</div>
+        <div class="check-content">
+          <div class="check-title">${c.title}</div>
+          <div class="check-desc">${c.desc}</div>
+          <div class="check-status">
+            <span class="status-pill sp-pending" id="vs${i}">Pending</span>
+            <button style="font-size:11px;padding:4px 10px;background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);border-radius:6px;cursor:pointer;" onclick="markCheck(${i})">Mark done ✓</button>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+function markCheck(i){
+  document.getElementById(`vs${i}`).textContent='Done ✓';
+  document.getElementById(`vs${i}`).className='status-pill sp-pass';
+  document.getElementById(`vcheck${i}`).style.opacity='.65';
+}
+
+function publish(){
+  toast('Hub marked as published and registered in portfolio ✓','success');
+  document.querySelectorAll('.step-btn').forEach(b=>b.classList.add('done'));
+}
+
+function copyBlueprint(){
+  if(pipeline.blueprint){
+    navigator.clipboard.writeText(JSON.stringify(pipeline.blueprint,null,2));
+    toast('Blueprint JSON copied ✓','success');
+  }
+}
+
+</script>
+</body>
+</html>
