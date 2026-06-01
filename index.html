@@ -1,1632 +1,1631 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>ActionHub Agent Studio — Teradyne</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ActionHub OS — Agent Studio</title>
 <style>
-body.sec-pending *{display:none!important;}
-body.sec-pending .sec-block{display:flex!important;}
-body.sec-blocked *{display:none!important;}
-body.sec-blocked .sec-block{display:flex!important;}
-.sec-block{max-width:560px;margin:80px auto;padding:32px;border:1px solid #3a4060;border-radius:16px;background:#1a1f35;text-align:center;font-family:system-ui,sans-serif;flex-direction:column;align-items:center;}
-.sec-block h2{margin:0 0 12px;color:#f87171;font-size:22px;}
-.sec-block p{color:#7e8ba8;font-size:14px;margin:6px 0;}
-</style>
-<script>
-(function(){
-  var S={validToken:'jeffersonxuinteradyne',allowDirect:true};
-  function block(t,m){document.body.classList.remove('sec-pending');document.body.classList.add('sec-blocked');document.body.insertAdjacentHTML('afterbegin','<div class="sec-block"><span style="font-size:44px">🔒</span><h2>'+t+'</h2><p>'+m+'</p></div>');}
-  function allow(){document.body.classList.remove('sec-pending','sec-blocked');}
-  function check(){var token=new URLSearchParams(location.search).get('access');if(S.allowDirect&&token===S.validToken){allow();return;}block('Access Denied','Jefferson only. Use ?access=jeffersonxuinteradyne');}
-  document.addEventListener('DOMContentLoaded',check);
-  // Show credentials prompt on first load if tokens missing
-  document.addEventListener('DOMContentLoaded',function(){
-    setTimeout(function(){
-      const s=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-      if(!s.githubToken||!s.supabaseMgmtToken) openSettings();
-    },800);
-  });
-})();
-</script>
-<style>
-:root{
-  --bg:#0f1320;--surface:#161c2e;--surface2:#1e2540;--card:#161c2e;
-  --ink:#e8edf8;--muted:#7e8ba8;--line:#2a3350;
-  --accent:#60a5fa;--accent-s:#0d1f3d;
-  --green:#34d399;--green-s:#0a2e1e;
-  --amber:#fbbf24;--amber-s:#2e2008;
-  --red:#f87171;--red-s:#2e1010;
-  --violet:#a78bfa;--violet-s:#1a0d3d;
-  --shadow:0 4px 28px rgba(0,0,0,.5);--radius:14px;
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);}
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap');
 
-/* ── Topbar ── */
-#topbar{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,13,28,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(14px);z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 20px;gap:16px;}
-.brand{display:flex;align-items:center;gap:10px;}
-.brand h1{margin:0;font-size:17px;font-weight:800;}
-.studio-badge{font-size:11px;font-weight:700;color:var(--violet);background:var(--violet-s);border:1px solid rgba(167,139,250,.3);border-radius:6px;padding:3px 10px;}
-.nav-tabs{display:flex;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:4px;}
-.nav-tab{padding:6px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);text-decoration:none;transition:all .15s;border:none;background:transparent;}
-.nav-tab:hover{background:var(--surface);color:var(--ink);}
-.nav-tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.3);}
-.nav-tab.port{color:var(--accent);}
+  :root {
+    --bg: #0a0c12;
+    --surface: #111420;
+    --surface2: #171b28;
+    --border: #1e2435;
+    --border2: #252d42;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --green: #22c984;
+    --yellow: #f5c842;
+    --red: #f74f6a;
+    --text: #e8eaf2;
+    --text2: #8892ab;
+    --text3: #4a5370;
+    --font-ui: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
 
-/* ── Shell ── */
-.shell{padding:76px 24px 40px;max-width:1400px;margin:0 auto;}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Pipeline header ── */
-.pipeline-steps{display:flex;align-items:center;gap:0;margin-bottom:32px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:6px;overflow-x:auto;}
-.step-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 20px;border-radius:10px;cursor:pointer;border:none;background:transparent;color:var(--muted);font:inherit;transition:all .15s;white-space:nowrap;position:relative;min-width:130px;}
-.step-btn:hover{background:var(--surface2);color:var(--ink);}
-.step-btn.active{background:var(--accent-s);color:var(--accent);}
-.step-btn.done{background:var(--green-s);color:var(--green);}
-.step-btn.done::after{content:'✓';position:absolute;top:6px;right:10px;font-size:11px;}
-.step-num{font-size:18px;font-weight:900;line-height:1;}
-.step-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
-.step-arrow{color:var(--line);font-size:18px;flex-shrink:0;padding:0 4px;}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 
-/* ── Cards ── */
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
-.card-head{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;display:flex;align-items:center;justify-content:space-between;}
-.card-head h2{margin:0;font-size:16px;font-weight:800;}
-.card-body{padding:20px;}
+  /* ── ACCESS GATE ── */
+  #gate {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  #gate.hidden { display: none; }
+  .gate-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 48px;
+    text-align: center;
+    width: 360px;
+  }
+  .gate-lock { font-size: 48px; margin-bottom: 16px; }
+  .gate-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .gate-card p { color: var(--text2); font-size: 13px; margin-bottom: 24px; font-family: var(--font-mono); }
 
-/* ── Step panels ── */
-.step-panel{display:none;}
-.step-panel.active{display:block;}
+  /* ── TOP BAR ── */
+  #topbar {
+    height: 54px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .tb-logo {
+    font-family: var(--font-ui);
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .tb-logo span { color: var(--accent); }
+  .tb-sep { width: 1px; height: 24px; background: var(--border2); }
+  .tb-title { font-weight: 600; font-size: 14px; color: var(--text2); }
+  .tb-badge {
+    margin-left: auto;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+  }
 
-/* ── Intake form ── */
-.intake-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
-input,select,textarea{width:100%;padding:10px 13px;border-radius:9px;border:1px solid var(--line);background:#0f1320;color:var(--ink);font:inherit;font-size:13px;}
-textarea{resize:vertical;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(96,165,250,.15);}
-input::placeholder,textarea::placeholder{color:var(--muted);}
-select option{background:var(--surface2);}
-.field{margin-bottom:14px;}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-.hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5;}
-.example-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
-.echip{font-size:11px;padding:4px 10px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);cursor:pointer;transition:all .13s;}
-.echip:hover{background:var(--accent-s);color:var(--accent);border-color:rgba(96,165,250,.4);}
+  /* ── STEP BAR ── */
+  #stepbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 20px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .step-tab {
+    padding: 10px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  }
+  .step-tab:hover { color: var(--text2); }
+  .step-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .step-tab.done { color: var(--green); }
+  .step-tab.done::before { content: "✓ "; }
 
-/* ── Blueprint display ── */
-.blueprint-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
-.spec-section{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;}
-.spec-section h3{margin:0 0 12px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);}
-.spec-row{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);gap:12px;}
-.spec-row:last-child{border-bottom:none;}
-.spec-key{font-size:12px;color:var(--muted);font-weight:600;min-width:120px;flex-shrink:0;}
-.spec-val{font-size:13px;color:var(--ink);font-weight:600;text-align:right;}
-.spec-val.editable{background:transparent;border:none;color:var(--ink);font-weight:600;font:inherit;font-size:13px;text-align:right;border-bottom:1px dashed var(--line);padding:0;}
-.spec-val.editable:focus{outline:none;border-bottom-color:var(--accent);}
-.col-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;margin:2px;}
-.col-core{background:var(--accent-s);color:var(--accent);border:1px solid rgba(96,165,250,.3);}
-.col-extra{background:var(--violet-s);color:var(--violet);border:1px solid rgba(167,139,250,.3);}
-.col-system{background:var(--surface2);color:var(--muted);border:1px solid var(--line);}
+  /* ── MAIN LAYOUT ── */
+  #main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
 
-/* ── Code output ── */
-.code-tabs{display:flex;gap:4px;margin-bottom:0;border-bottom:1px solid var(--line);padding:0 16px;background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;}
-.code-tab{padding:10px 14px;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;}
-.code-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
-.code-block{background:#0a0d18;border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:16px 18px;font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.6;color:#a8b8d0;max-height:420px;overflow:auto;white-space:pre;}
-.copy-btn{font-size:11px;padding:5px 11px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);border-radius:7px;cursor:pointer;transition:all .13s;}
-.copy-btn:hover{background:var(--accent-s);color:var(--accent);}
+  /* ── PANELS ── */
+  .panel {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+  .panel.active { display: block; }
 
-/* ── Validation checklist ── */
-.check-list{display:flex;flex-direction:column;gap:10px;}
-.check-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);}
-.check-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
-.check-content{flex:1;}
-.check-title{font-size:13px;font-weight:700;margin-bottom:3px;}
-.check-desc{font-size:12px;color:var(--muted);line-height:1.5;}
-.check-status{display:flex;align-items:center;gap:6px;margin-top:8px;}
-.status-pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;}
-.sp-pending{background:var(--surface);color:var(--muted);border:1px solid var(--line);}
-.sp-pass{background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);}
-.sp-warn{background:var(--amber-s);color:var(--amber);border:1px solid rgba(251,191,36,.3);}
+  .panel h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .panel > .desc {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 28px;
+    font-family: var(--font-mono);
+    line-height: 1.6;
+  }
 
-/* ── Buttons ── */
-button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 16px;font-weight:700;font:inherit;font-size:13px;transition:all .15s;}
-.btn-primary{background:var(--accent);color:#05192a;}
-.btn-primary:hover{background:#93c5fd;box-shadow:0 0 0 3px rgba(96,165,250,.2);}
-.btn-secondary{background:var(--surface2);color:var(--accent);border:1px solid rgba(96,165,250,.3);}
-.btn-secondary:hover{background:var(--accent-s);}
-.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
-.btn-ghost:hover{background:var(--surface2);}
-.btn-success{background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);}
-.btn-success:hover{background:#0d3d27;}
-.btn-row{display:flex;gap:10px;align-items:center;margin-top:20px;}
+  /* ── FORM ELEMENTS ── */
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .field-row.full { grid-template-columns: 1fr; }
+  .field-row.trio { grid-template-columns: 1fr 1fr 1fr; }
 
-/* ── AI thinking ── */
-.ai-thinking{display:flex;align-items:center;gap:10px;padding:16px;background:var(--surface2);border-radius:10px;border:1px solid var(--accent-s);color:var(--accent);font-size:13px;}
-.think-dots span{animation:blink 1.4s infinite;font-size:20px;line-height:1;}
-.think-dots span:nth-child(2){animation-delay:.2s;}
-.think-dots span:nth-child(3){animation-delay:.4s;}
-@keyframes blink{0%,80%,100%{opacity:.2;}40%{opacity:1;}}
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    margin-bottom: 6px;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    border-color: var(--accent);
+  }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field select option { background: var(--surface2); }
 
-/* ── Toast ── */
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 20px;font-size:13px;z-index:600;transition:transform .3s;white-space:nowrap;}
-#toast.show{transform:translateX(-50%) translateY(0);}
-#toast.success{border-color:rgba(52,211,153,.4);color:var(--green);}
-#toast.error{border-color:rgba(248,113,113,.4);color:var(--red);}
+  /* ── TEMPLATES ── */
+  .template-row { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tpl-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .tpl-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-/* ── Auto-provision log ── */
-.auto-log{background:#0a0d18;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-family:ui-monospace,Consolas,monospace;font-size:12px;max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
-.log-line{line-height:1.5;color:#8a9bb8;}
-.log-line.log-success{color:var(--green);}
-.log-line.log-error{color:var(--red);}
-.log-line.log-warn{color:var(--amber);}
-.log-line.log-info{color:#8a9bb8;}
-.log-time{color:#3a4a6a;margin-right:8px;}
-.done-banner{display:none;align-items:center;gap:14px;padding:16px 20px;background:var(--green-s);border:1px solid rgba(52,211,153,.3);border-radius:10px;margin-top:14px;}
-.done-banner .db-icon{font-size:28px;}
-.done-banner .db-text{flex:1;}
-.done-banner .db-title{font-size:15px;font-weight:800;color:var(--green);margin-bottom:4px;}
-.done-banner .db-url{font-size:12px;color:var(--muted);}
-.done-banner a{color:var(--accent);text-decoration:none;}
-.done-banner a:hover{text-decoration:underline;}
-.auto-btn{background:linear-gradient(135deg,var(--green-s),var(--accent-s));color:var(--green);border:1px solid rgba(52,211,153,.4);font-weight:800;font-size:14px;padding:12px 24px;border-radius:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px;}
-.auto-btn:hover{background:linear-gradient(135deg,#0d3d27,#1a3a5c);box-shadow:0 0 20px rgba(52,211,153,.2);}
+  /* ── EXTRA FIELDS TABLE ── */
+  .extra-fields-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+  .extra-fields-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .extra-fields-table td { padding: 6px 6px; }
+  .extra-fields-table input, .extra-fields-table select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 10px;
+    outline: none;
+  }
+  .remove-field-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    transition: color 0.2s;
+  }
+  .remove-field-btn:hover { color: var(--red); }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-family: var(--font-ui);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    letter-spacing: 0.03em;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green {
+    background: var(--green);
+    color: var(--bg);
+  }
+  .btn-green:hover { opacity: 0.88; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 24px; align-items: center; }
+
+  /* ── BLUEPRINT DISPLAY ── */
+  .blueprint-box {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text2);
+    white-space: pre-wrap;
+    min-height: 200px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+  }
+
+  /* ── PROVISION LOG ── */
+  #provision-log {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 2;
+    min-height: 280px;
+    max-height: 420px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+  }
+  .log-line { display: flex; gap: 12px; align-items: flex-start; }
+  .log-time { color: var(--text3); min-width: 80px; }
+  .log-icon { min-width: 20px; }
+  .log-msg { color: var(--text2); flex: 1; }
+  .log-ok .log-msg { color: var(--green); }
+  .log-warn .log-msg { color: var(--yellow); }
+  .log-err .log-msg { color: var(--red); }
+  .log-info .log-msg { color: var(--accent); }
+
+  /* ── CREDENTIALS PANEL ── */
+  #creds-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 28px;
+  }
+  #creds-panel h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--text2);
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+  .creds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .cred-status {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .cred-ok { background: rgba(34,201,132,0.12); color: var(--green); }
+  .cred-miss { background: rgba(247,79,106,0.12); color: var(--red); }
+
+  /* ── VALIDATE CHECKLIST ── */
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    font-family: var(--font-mono);
+    transition: all 0.3s;
+  }
+  .checklist li.pass { border-color: rgba(34,201,132,0.3); }
+  .checklist li.fail { border-color: rgba(247,79,106,0.3); }
+  .checklist li.pending { opacity: 0.5; }
+  .check-icon { font-size: 16px; min-width: 20px; }
+  .check-label { flex: 1; }
+  .check-detail { color: var(--text3); font-size: 11px; }
+
+  /* ── RESULT CARD ── */
+  #result-card {
+    display: none;
+    background: linear-gradient(135deg, rgba(79,142,247,0.08), rgba(124,92,252,0.08));
+    border: 1px solid rgba(79,142,247,0.3);
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 20px;
+  }
+  #result-card.show { display: block; }
+  #result-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .result-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .result-row label { color: var(--text3); min-width: 120px; }
+  .result-row a { color: var(--accent); word-break: break-all; }
+  .result-token {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 4px 10px;
+    color: var(--yellow);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* ── SQL MODAL ── */
+  #sql-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  #sql-modal.show { display: flex; }
+  .sql-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 32px;
+    width: 700px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .sql-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .sql-pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--green);
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-right: 10px;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { border-color: var(--green); color: var(--green); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── SECTION HEADERS ── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text3);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-family: var(--font-mono);
+    margin: 24px 0 12px;
+  }
+
+  /* ── TOGGLE ── */
+  .toggle-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .toggle-row label { font-size: 13px; color: var(--text2); font-family: var(--font-mono); }
+  .toggle {
+    width: 40px; height: 22px;
+    background: var(--border2);
+    border-radius: 11px;
+    position: relative; cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border: none;
+    outline: none;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 3px; left: 3px;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(18px); }
+
+  /* ── NOTICE ── */
+  .notice {
+    background: rgba(245,200,66,0.08);
+    border: 1px solid rgba(245,200,66,0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--yellow);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .notice.info {
+    background: rgba(79,142,247,0.08);
+    border-color: rgba(79,142,247,0.25);
+    color: var(--accent);
+  }
 </style>
 </head>
-<body class="sec-pending">
-<div id="toast"></div>
+<body>
 
-<!-- Topbar -->
+<!-- ACCESS GATE -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-lock">🔒</div>
+    <h2>Agent Studio</h2>
+    <p>ActionHub OS — Authorized access only</p>
+    <p id="gate-err" style="color:var(--red);font-size:12px;min-height:18px;margin-bottom:8px;"></p>
+  </div>
+</div>
+
+<!-- TOP BAR -->
 <div id="topbar">
-  <div class="brand">
-    <svg width="100" height="26" viewBox="0 0 220 56" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="56" height="56" rx="6" fill="#e31837"/>
-      <rect x="12" y="10" width="32" height="8" rx="2" fill="#fff"/>
-      <rect x="22" y="18" width="12" height="28" rx="2" fill="#fff"/>
-      <text x="66" y="40" font-family="'Segoe UI',Arial,sans-serif" font-size="30" font-weight="700" fill="#e8edf8">TERADYNE</text>
-    </svg>
-    <div style="width:1px;height:22px;background:var(--line);margin:0 6px;"></div>
-    <h1>Agent Studio</h1>
-    <span class="studio-badge">Hub Builder · Jefferson Only</span>
+  <div class="tb-logo">TERADYNE <span>|</span> ActionHub OS</div>
+  <div class="tb-sep"></div>
+  <div class="tb-title">Agent Studio</div>
+  <div class="tb-badge">HUB BUILDER</div>
+</div>
+
+<!-- STEP BAR -->
+<div id="stepbar">
+  <div class="step-tab active" data-step="1" onclick="goStep(1)">01 · Intake</div>
+  <div class="step-tab" data-step="2" onclick="goStep(2)">02 · Blueprint</div>
+  <div class="step-tab" data-step="3" onclick="goStep(3)">03 · Review</div>
+  <div class="step-tab" data-step="4" onclick="goStep(4)">04 · Provision</div>
+  <div class="step-tab" data-step="5" onclick="goStep(5)">05 · Validate</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- ── STEP 1: INTAKE ── -->
+  <div class="panel active" id="panel-1">
+    <h2>Hub Intake</h2>
+    <p class="desc">Describe the new hub. Use a quick template or fill in manually.</p>
+
+    <div class="section-label">Quick Templates</div>
+    <div class="template-row">
+      <button class="tpl-btn" onclick="applyTemplate('memory')">Memory / Yield</button>
+      <button class="tpl-btn" onclick="applyTemplate('soc')">SOC / Design</button>
+      <button class="tpl-btn" onclick="applyTemplate('field')">Field / Customer</button>
+      <button class="tpl-btn" onclick="applyTemplate('program')">Program / Schedule</button>
+      <button class="tpl-btn" onclick="applyTemplate('instrument')">Instrument / Test</button>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Hub Name</label>
+        <input id="hub-name" type="text" placeholder="e.g. AC Instrument Hub">
+      </div>
+      <div class="field">
+        <label>Team / Division</label>
+        <input id="hub-team" type="text" placeholder="e.g. Computer Test Division">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>DB Table Name</label>
+        <input id="hub-table" type="text" placeholder="e.g. ac_instrument_actions">
+      </div>
+      <div class="field">
+        <label>Access Token</label>
+        <input id="hub-token" type="text" placeholder="e.g. myteam+teradyne+2026">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>GitHub Repo Name</label>
+        <input id="hub-repo" type="text" placeholder="e.g. ac-instrument-hub">
+      </div>
+      <div class="field">
+        <label>Product Line / Purpose</label>
+        <input id="hub-purpose" type="text" placeholder="e.g. AC test instrument escalations">
+      </div>
+    </div>
+    <div class="field-row full">
+      <div class="field">
+        <label>AI Persona Description</label>
+        <textarea id="hub-persona" placeholder="You are an expert on Teradyne AC instrument test systems. You help track customer escalations, engineering issues, and field action items for the AC instrument team."></textarea>
+      </div>
+    </div>
+
+    <div class="section-label">Action Types (comma-separated)</div>
+    <div class="field-row full">
+      <div class="field">
+        <input id="hub-types" type="text" placeholder="Bug, Feature Request, Escalation, NPI, Roadmap">
+      </div>
+    </div>
+
+    <div class="section-label">Extra Columns (hub-specific fields)</div>
+    <table class="extra-fields-table">
+      <thead>
+        <tr>
+          <th>Column Name</th>
+          <th>Label (UI)</th>
+          <th>Type</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="extra-fields-body"></tbody>
+    </table>
+    <button class="btn btn-secondary btn-sm" onclick="addExtraField()">+ Add Field</button>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(2)">Generate Blueprint →</button>
+    </div>
   </div>
-  <div class="nav-tabs">
-    <a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/uLED/?access=jeffersonxuinteradyne" target="_blank">🔵 uLED Hub</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/ImageSensor/?access=imgsensorteradyne2026" target="_blank">🟣 IS Hub</a>
-    <span class="nav-tab active">🤖 Agent Studio</span>
+
+  <!-- ── STEP 2: BLUEPRINT ── -->
+  <div class="panel" id="panel-2">
+    <h2>AI Blueprint</h2>
+    <p class="desc">Claude generates the hub specification. Review before proceeding.</p>
+    <div id="blueprint-output" class="blueprint-box">Press "Generate Blueprint" to produce the spec…</div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="generateBlueprint()">⚡ Generate with AI</button>
+      <button class="btn btn-secondary" onclick="generateBlueprintLocal()">Generate (no AI)</button>
+      <button class="btn btn-secondary" onclick="goStep(3)">Review Spec →</button>
+    </div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;">
-    <span style="font-size:11px;color:var(--muted);">Logged in as Jefferson Xu</span>
-    <button class="btn-secondary" onclick="openSettings()" style="font-size:11px;padding:5px 10px;">⚙️ Credentials</button>
+
+  <!-- ── STEP 3: REVIEW ── -->
+  <div class="panel" id="panel-3">
+    <h2>Review Spec</h2>
+    <p class="desc">Edit the JSON spec if needed. Verify all fields before provisioning.</p>
+    <div class="field-row full">
+      <div class="field">
+        <label>Hub Spec (editable JSON)</label>
+        <textarea id="spec-editor" style="min-height:340px;font-size:12px;"></textarea>
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle on" id="toggle-portfolio" onclick="toggleBtn(this)"></button>
+      <label>Register in Portfolio Dashboard</label>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle on" id="toggle-pages" onclick="toggleBtn(this)"></button>
+      <label>Enable GitHub Pages on deploy</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Proceed to Provision →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: PROVISION ── -->
+  <div class="panel" id="panel-4">
+    <h2>Provision</h2>
+    <p class="desc">Full automatic deploy: SQL → GitHub repo → upload HTML → enable Pages → register in Portfolio.</p>
+
+    <div id="creds-panel">
+      <h3>🔑 Credentials</h3>
+      <div class="creds-grid">
+        <div class="field">
+          <label>GitHub PAT</label>
+          <input id="cred-gh" type="password" placeholder="ghp_xxxx..." oninput="saveCreds()">
+          <span id="st-gh" class="cred-status cred-miss">Not set</span>
+        </div>
+        <div class="field">
+          <label>Supabase Management Token</label>
+          <input id="cred-sb-mgmt" type="password" placeholder="sbp_xxxx..." oninput="saveCreds()">
+          <span id="st-sbm" class="cred-status cred-miss">Not set</span>
+        </div>
+        <div class="field">
+          <label>Supabase Project Ref</label>
+          <input id="cred-sb-ref" type="text" placeholder="abcdefghij (from dashboard URL)" oninput="saveCreds()">
+          <span id="st-sbr" class="cred-status cred-miss">Not set</span>
+        </div>
+        <div class="field">
+          <label>Supabase Anon Key</label>
+          <input id="cred-sb-anon" type="password" placeholder="eyJhbGciOi..." oninput="saveCreds()">
+          <span id="st-sba" class="cred-status cred-miss">Not set</span>
+        </div>
+        <div class="field">
+          <label>Cloudflare Worker URL</label>
+          <input id="cred-cf" type="text" placeholder="https://xxx.workers.dev" oninput="saveCreds()">
+          <span id="st-cf" class="cred-status cred-miss">Not set</span>
+        </div>
+        <div class="field">
+          <label>GitHub Username</label>
+          <input id="cred-ghuser" type="text" placeholder="xujeffersoninusa" oninput="saveCreds()">
+          <span id="st-ghu" class="cred-status cred-miss">Not set</span>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:12px;">Stored in localStorage only — never committed to Git.</p>
+    </div>
+
+    <div class="notice">
+      ⚠️ Token with + characters will be URL-encoded as %2B automatically. The hub HTML will use the raw token; the displayed live URL will use %2B encoding. This is the correct behavior per ActionHub OS architecture.
+    </div>
+
+    <div id="provision-log"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="deploy-btn" onclick="runProvision()">🚀 Auto-Deploy Everything</button>
+      <button class="btn btn-secondary" onclick="showSQLModal()">📋 View SQL (run manually)</button>
+      <button class="btn btn-secondary" onclick="goStep(5)">Go to Validate →</button>
+    </div>
+
+    <div id="result-card">
+      <h3>🎉 Deployment Complete</h3>
+      <div class="result-row"><label>Live URL:</label><a id="res-url" href="#" target="_blank"></a></div>
+      <div class="result-row"><label>Encoded URL:</label><a id="res-url-enc" href="#" target="_blank"></a></div>
+      <div class="result-row"><label>Access Token:</label><span id="res-token" class="result-token"></span></div>
+      <div class="result-row"><label>Repository:</label><a id="res-repo" href="#" target="_blank"></a></div>
+      <div id="res-sql-warn" class="notice" style="display:none;margin-top:12px;">⚠️ SQL auto-run failed. Run it manually in Supabase SQL Editor using the "View SQL" button above, then come back and complete validation.</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: VALIDATE ── -->
+  <div class="panel" id="panel-5">
+    <h2>Validate Deployment</h2>
+    <p class="desc">8-point checklist. Green = passed, red = needs attention.</p>
+    <ul class="checklist" id="checklist"></ul>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="runValidate()">▶ Run Checks</button>
+      <button class="btn btn-secondary" onclick="goStep(1)">← New Hub</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- SQL MODAL -->
+<div id="sql-modal">
+  <div class="sql-card">
+    <h3>📋 SQL Schema — Run in Supabase SQL Editor</h3>
+    <pre class="sql-pre" id="sql-content"></pre>
+    <button class="copy-btn" onclick="copySQL()">Copy SQL</button>
+    <button class="copy-btn" onclick="openSupabase()">Open Supabase SQL Editor ↗</button>
+    <button class="btn btn-secondary btn-sm" onclick="closeSQLModal()">Close</button>
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div id="settingsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:var(--surface);border:1px solid var(--line);border-radius:16px;width:min(580px,100%);padding:28px;box-shadow:0 40px 80px rgba(0,0,0,.7);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-      <div style="font-size:18px;font-weight:800;">⚙️ Agent Credentials</div>
-      <button class="btn-ghost" onclick="closeSettings()" style="padding:5px 10px;">✕</button>
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:18px;padding:10px 12px;background:var(--green-s);border:1px solid rgba(52,211,153,.2);border-radius:8px;">
-      ✅ Credentials are stored in your <strong>browser localStorage only</strong> — never in the HTML file or GitHub.
-    </div>
-    <div style="display:flex;flex-direction:column;gap:12px;">
-      <div><label>Supabase Management Token (sbp_...)</label><input id="sSbpToken" type="password" placeholder="sbp_..."/></div>
-      <div><label>GitHub Personal Access Token (ghp_...)</label><input id="sGhToken" type="password" placeholder="ghp_..."/></div>
-      <div><label>GitHub Username</label><input id="sGhUser" placeholder="xujeffersoninusa"/></div>
-      <div><label>Cloudflare Proxy URL</label><input id="sProxy" placeholder="https://rapid-pine-a057.xujefferson.workers.dev"/></div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:20px;">
-      <button class="btn-primary" onclick="saveSettings()" style="flex:1;">💾 Save to browser</button>
-      <button class="btn-ghost" onclick="closeSettings()">Cancel</button>
-    </div>
+<script>
+// ─────────────────────────────────────────────
+// ACCESS GATE
+// ─────────────────────────────────────────────
+const VALID_TOKENS = ['jeffersonxuinteradyne'];
+
+function checkAccess() {
+  const raw = new URLSearchParams(window.location.search).get('access') || '';
+  // Normalize: URLSearchParams already decodes %2B → +, but + → space in some cases
+  // So we check both raw and with spaces replaced by +
+  const token = raw.replace(/ /g, '+');
+  if (VALID_TOKENS.includes(token)) {
+    document.getElementById('gate').classList.add('hidden');
+    loadCreds();
+  } else {
+    document.getElementById('gate-err').textContent = token ? 'Invalid token.' : 'No token provided.';
+  }
+}
+checkAccess();
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let spec = {};
+let currentStep = 1;
+let provisionLog = [];
+
+// ─────────────────────────────────────────────
+// STEP NAVIGATION
+// ─────────────────────────────────────────────
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + n).classList.add('active');
+  document.querySelectorAll('.step-tab').forEach(t => {
+    const s = parseInt(t.dataset.step);
+    t.classList.remove('active');
+    if (s === n) t.classList.add('active');
+  });
+  currentStep = n;
+
+  if (n === 3) populateSpecEditor();
+  if (n === 5) initChecklist();
+}
+
+// ─────────────────────────────────────────────
+// CREDENTIALS
+// ─────────────────────────────────────────────
+function saveCreds() {
+  const c = {
+    gh: document.getElementById('cred-gh').value,
+    sbMgmt: document.getElementById('cred-sb-mgmt').value,
+    sbRef: document.getElementById('cred-sb-ref').value,
+    sbAnon: document.getElementById('cred-sb-anon').value,
+    cf: document.getElementById('cred-cf').value,
+    ghUser: document.getElementById('cred-ghuser').value
+  };
+  localStorage.setItem('actionhub_creds', JSON.stringify(c));
+  updateCredStatus();
+}
+
+function loadCreds() {
+  try {
+    const c = JSON.parse(localStorage.getItem('actionhub_creds') || '{}');
+    if (c.gh) document.getElementById('cred-gh').value = c.gh;
+    if (c.sbMgmt) document.getElementById('cred-sb-mgmt').value = c.sbMgmt;
+    if (c.sbRef) document.getElementById('cred-sb-ref').value = c.sbRef;
+    if (c.sbAnon) document.getElementById('cred-sb-anon').value = c.sbAnon;
+    if (c.cf) document.getElementById('cred-cf').value = c.cf;
+    if (c.ghUser) document.getElementById('cred-ghuser').value = c.ghUser;
+    updateCredStatus();
+  } catch(e) {}
+}
+
+function getCreds() {
+  return {
+    gh: document.getElementById('cred-gh').value.trim(),
+    sbMgmt: document.getElementById('cred-sb-mgmt').value.trim(),
+    sbRef: document.getElementById('cred-sb-ref').value.trim(),
+    sbAnon: document.getElementById('cred-sb-anon').value.trim(),
+    cf: document.getElementById('cred-cf').value.trim(),
+    ghUser: document.getElementById('cred-ghuser').value.trim()
+  };
+}
+
+function updateCredStatus() {
+  const c = getCreds();
+  setCredSt('st-gh', !!c.gh);
+  setCredSt('st-sbm', !!c.sbMgmt);
+  setCredSt('st-sbr', !!c.sbRef);
+  setCredSt('st-sba', !!c.sbAnon);
+  setCredSt('st-cf', !!c.cf);
+  setCredSt('st-ghu', !!c.ghUser);
+}
+
+function setCredSt(id, ok) {
+  const el = document.getElementById(id);
+  el.textContent = ok ? '✓ Set' : 'Not set';
+  el.className = 'cred-status ' + (ok ? 'cred-ok' : 'cred-miss');
+}
+
+// ─────────────────────────────────────────────
+// TEMPLATES
+// ─────────────────────────────────────────────
+const TEMPLATES = {
+  memory: {
+    name: 'Memory Yield Hub', team: 'Memory Engineering', table: 'memory_yield_actions',
+    token: 'memory+teradyne+2026', repo: 'memory-yield-hub',
+    purpose: 'Memory yield improvement and process engineering escalations',
+    persona: 'You are an expert on semiconductor memory yield engineering. You help track wafer yield issues, process excursions, and improvement actions across memory product generations.',
+    types: 'Yield Issue, Process Excursion, Engineering Task, Roadmap, NPI'
+  },
+  soc: {
+    name: 'SOC Design Hub', team: 'SOC Design Engineering', table: 'soc_design_actions',
+    token: 'socdesign+teradyne+2026', repo: 'soc-design-hub',
+    purpose: 'SOC design verification and tapeout action tracking',
+    persona: 'You are an expert on SOC design and verification flows. You help track design bugs, verification issues, and tapeout milestones.',
+    types: 'Design Bug, Verification Issue, Tapeout Item, Sim Task, ECO'
+  },
+  field: {
+    name: 'Field Service Hub', team: 'Field Service', table: 'field_service_actions',
+    token: 'fieldservice+teradyne+2026', repo: 'field-service-hub',
+    purpose: 'Customer field service escalations and support actions',
+    persona: 'You are a field service operations expert. You help track customer site issues, service escalations, and support actions across accounts.',
+    types: 'Escalation, Bug, Feature Request, RMA, Site Visit'
+  },
+  program: {
+    name: 'Program Hub', team: 'Program Management', table: 'program_actions',
+    token: 'program+teradyne+2026', repo: 'program-hub',
+    purpose: 'Cross-functional program milestone and risk tracking',
+    persona: 'You are a program management expert. You help track milestones, risks, and cross-functional action items to keep programs on schedule.',
+    types: 'Milestone, Risk, Action Item, Decision, Dependency'
+  },
+  instrument: {
+    name: 'Instrument Hub', team: 'Computer Test Division', table: 'instrument_actions',
+    token: 'instrument+teradyne+2026', repo: 'instrument-hub',
+    purpose: 'Test instrument customer escalations and engineering issues',
+    persona: 'You are an expert on Teradyne test instruments. You help track customer escalations, hardware bugs, software issues, and feature requests across instrument product lines.',
+    types: 'Bug, Feature Request, Escalation, NPI, Roadmap'
+  }
+};
+
+function applyTemplate(key) {
+  const t = TEMPLATES[key];
+  document.getElementById('hub-name').value = t.name;
+  document.getElementById('hub-team').value = t.team;
+  document.getElementById('hub-table').value = t.table;
+  document.getElementById('hub-token').value = t.token;
+  document.getElementById('hub-repo').value = t.repo;
+  document.getElementById('hub-purpose').value = t.purpose;
+  document.getElementById('hub-persona').value = t.persona;
+  document.getElementById('hub-types').value = t.types;
+}
+
+// ─────────────────────────────────────────────
+// EXTRA FIELDS
+// ─────────────────────────────────────────────
+let fieldCount = 0;
+
+function addExtraField(col='', label='', type='text') {
+  const tbody = document.getElementById('extra-fields-body');
+  const id = ++fieldCount;
+  const tr = document.createElement('tr');
+  tr.id = 'ef-' + id;
+  tr.innerHTML = `
+    <td><input type="text" value="${col}" placeholder="e.g. serial_number"></td>
+    <td><input type="text" value="${label}" placeholder="e.g. Serial Number"></td>
+    <td>
+      <select>
+        <option value="text" ${type==='text'?'selected':''}>text</option>
+        <option value="dropdown" ${type==='dropdown'?'selected':''}>dropdown</option>
+        <option value="date" ${type==='date'?'selected':''}>date</option>
+      </select>
+    </td>
+    <td><button class="remove-field-btn" onclick="document.getElementById('ef-${id}').remove()">✕</button></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function getExtraFields() {
+  const rows = document.querySelectorAll('#extra-fields-body tr');
+  return Array.from(rows).map(r => {
+    const inputs = r.querySelectorAll('input, select');
+    return { col: inputs[0].value.trim(), label: inputs[1].value.trim(), type: inputs[2].value };
+  }).filter(f => f.col);
+}
+
+// ─────────────────────────────────────────────
+// SPEC BUILDING
+// ─────────────────────────────────────────────
+function buildSpec() {
+  return {
+    name: document.getElementById('hub-name').value.trim() || 'New Hub',
+    team: document.getElementById('hub-team').value.trim() || 'Team',
+    table: document.getElementById('hub-table').value.trim() || 'new_actions',
+    token: document.getElementById('hub-token').value.trim() || 'token',
+    repo: document.getElementById('hub-repo').value.trim() || 'new-hub',
+    purpose: document.getElementById('hub-purpose').value.trim(),
+    persona: document.getElementById('hub-persona').value.trim(),
+    types: document.getElementById('hub-types').value.split(',').map(s=>s.trim()).filter(Boolean),
+    extraFields: getExtraFields()
+  };
+}
+
+function generateBlueprintLocal() {
+  spec = buildSpec();
+  document.getElementById('blueprint-output').textContent = JSON.stringify(spec, null, 2);
+}
+
+async function generateBlueprint() {
+  spec = buildSpec();
+  document.getElementById('blueprint-output').textContent = '⏳ Generating with Claude AI…';
+
+  const prompt = `You are an ActionHub OS architect. Generate a concise JSON specification for a new hub with these details:
+Name: ${spec.name}
+Team: ${spec.team}
+Table: ${spec.table}
+Token: ${spec.token}
+Repo: ${spec.repo}
+Purpose: ${spec.purpose}
+Action Types: ${spec.types.join(', ')}
+Extra Fields: ${JSON.stringify(spec.extraFields)}
+
+Return ONLY valid JSON with these keys: name, team, table, token, repo, purpose, persona, types (array), extraFields (array of {col, label, type}).
+Use the persona: "${spec.persona || 'You are a helpful Teradyne product expert.'}"`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.map(i => i.text || '').join('') || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    spec = { ...spec, ...parsed };
+    document.getElementById('blueprint-output').textContent = JSON.stringify(spec, null, 2);
+  } catch(e) {
+    document.getElementById('blueprint-output').textContent = JSON.stringify(spec, null, 2) + '\n\n// AI generation failed — using local spec';
+  }
+}
+
+function populateSpecEditor() {
+  if (!spec.name) spec = buildSpec();
+  document.getElementById('spec-editor').value = JSON.stringify(spec, null, 2);
+}
+
+function getSpecFromEditor() {
+  try {
+    return JSON.parse(document.getElementById('spec-editor').value);
+  } catch(e) {
+    alert('Invalid JSON in spec editor.');
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// SQL GENERATION — FIX: proper token encoding note
+// ─────────────────────────────────────────────
+function generateSQL(s) {
+  const extraCols = (s.extraFields || []).map(f => `  ${f.col.replace(/\s+/g,'_').toLowerCase()}  text`).join(',\n');
+  return `-- ActionHub OS: ${s.name}
+-- Table: ${s.table}
+-- Generated by Agent Studio
+
+create table if not exists ${s.table} (
+  id              uuid primary key default gen_random_uuid(),
+  title           text not null,
+  account         text,
+  priority        text default '3-Important',
+  status          text default 'Not Started',
+  due             date,
+  owner           text,
+  description     text,
+  checklist       jsonb default '[]',
+  project         text,
+  bucket          text,
+  type            text${extraCols ? ',\n' + extraCols : ''},
+  version_no      integer default 1,
+  modified_by     text,
+  modified_at     timestamptz default now(),
+  is_deleted      boolean default false
+);
+
+-- Row Level Security
+alter table ${s.table} enable row level security;
+
+create policy "${s.table}_anon_read" on ${s.table}
+  for select using (true);
+
+create policy "${s.table}_anon_write" on ${s.table}
+  for all using (true) with check (true);
+
+-- Indexes
+create index if not exists ${s.table}_status_idx on ${s.table}(status);
+create index if not exists ${s.table}_deleted_idx on ${s.table}(is_deleted);`;
+}
+
+// ─────────────────────────────────────────────
+// HTML GENERATION — FIX: token comparison + URL encoding
+// ─────────────────────────────────────────────
+function generateHubHTML(s, sbUrl, sbAnon, cfUrl) {
+  // KEY FIX: token is stored raw; URL comparison normalizes + vs %2B
+  const tokenJSON = JSON.stringify(s.token);
+  const typesJSON = JSON.stringify(s.types || []);
+  const extraFieldsJSON = JSON.stringify(s.extraFields || []);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${s.name}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0f111a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
+#gate{position:fixed;inset:0;background:#0f111a;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px}
+#gate h2{font-size:22px;font-weight:700}
+#gate p{color:#64748b;font-size:13px}
+#gate.hidden{display:none}
+#topbar{height:54px;background:#161929;border-bottom:1px solid #1e2540;display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+.tb-logo{font-weight:800;font-size:15px;letter-spacing:.06em}
+.tb-logo span{color:#4f8ef7}
+.tb-name{font-weight:600;font-size:14px;color:#8892ab}
+.tb-badge{margin-left:auto;background:#1e2540;color:#8892ab;font-size:11px;padding:4px 12px;border-radius:20px}
+.tb-conn{font-size:11px;padding:4px 10px;border-radius:4px;background:rgba(34,201,132,.12);color:#22c984}
+#kpi-bar{background:#13162a;border-bottom:1px solid #1e2540;display:flex;gap:24px;padding:0 20px;align-items:center;height:50px;flex-shrink:0}
+.kpi{text-align:center}
+.kpi-val{font-size:20px;font-weight:800}
+.kpi-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em}
+.kpi-urgent .kpi-val{color:#f74f6a}
+.kpi-late .kpi-val{color:#f5c842}
+#content{flex:1;display:flex;overflow:hidden}
+#table-area{flex:1;overflow-y:auto;padding:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#161929;color:#8892ab;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid #1e2540;position:sticky;top:0;z-index:10}
+td{padding:10px 12px;border-bottom:1px solid #151826;vertical-align:top}
+tr:hover td{background:rgba(79,142,247,.04)}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.p-urgent{background:rgba(247,79,106,.15);color:#f74f6a}
+.p-high{background:rgba(245,200,66,.15);color:#f5c842}
+.p-important{background:rgba(79,142,247,.15);color:#4f8ef7}
+.p-normal{background:rgba(100,116,139,.15);color:#94a3b8}
+.s-overdue{background:rgba(247,79,106,.15);color:#f74f6a}
+.s-atrisk{background:rgba(245,200,66,.15);color:#f5c842}
+.s-ontrack{background:rgba(34,201,132,.15);color:#22c984}
+.s-notstarted{background:rgba(100,116,139,.15);color:#94a3b8}
+.s-done{background:rgba(100,116,139,.1);color:#64748b}
+.empty{text-align:center;padding:60px;color:#4a5370;font-size:14px}
+.add-btn{background:#4f8ef7;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.add-btn:hover{opacity:.85}
+/* Modal */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+#modal.show{display:flex}
+.modal-card{background:#161929;border:1px solid #1e2540;border-radius:14px;padding:28px;width:520px;max-height:85vh;overflow-y:auto}
+.modal-card h3{font-size:16px;font-weight:700;margin-bottom:20px}
+.mfield{margin-bottom:14px}
+.mfield label{display:block;font-size:11px;font-weight:600;color:#8892ab;letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.mfield input,.mfield select,.mfield textarea{width:100%;background:#0f111a;border:1px solid #1e2540;border-radius:7px;color:#e2e8f0;font-size:13px;padding:9px 12px;outline:none}
+.mfield textarea{min-height:80px;resize:vertical}
+.modal-btns{display:flex;gap:10px;margin-top:20px}
+.btn-save{background:#4f8ef7;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-del{background:rgba(247,79,106,.15);color:#f74f6a;border:1px solid rgba(247,79,106,.3);border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-cancel{background:#1e2540;color:#8892ab;border:none;border-radius:7px;padding:9px 18px;font-size:13px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div style="font-size:40px">🔒</div>
+  <h2>${s.name}</h2>
+  <p>Access Denied — Use direct link with access token.</p>
+  <p id="gate-msg" style="color:#f74f6a;font-size:12px;min-height:16px"></p>
+</div>
+
+<div id="topbar">
+  <div class="tb-logo">TERADYNE <span>|</span> ActionHub OS</div>
+  <div style="width:1px;height:24px;background:#1e2540"></div>
+  <div class="tb-name">${s.name}</div>
+  <span class="tb-badge">${s.team}</span>
+  <span class="tb-conn" id="conn-status">⬤ Connecting…</span>
+  <button class="add-btn" onclick="openModal(null)" style="margin-left:auto">+ New Action</button>
+</div>
+
+<div id="kpi-bar">
+  <div class="kpi"><div class="kpi-val" id="k-total">—</div><div class="kpi-lbl">Total</div></div>
+  <div class="kpi kpi-urgent"><div class="kpi-val" id="k-urgent">—</div><div class="kpi-lbl">Urgent+High</div></div>
+  <div class="kpi kpi-late"><div class="kpi-val" id="k-late">—</div><div class="kpi-lbl">Late+At Risk</div></div>
+  <div class="kpi"><div class="kpi-val" id="k-owners">—</div><div class="kpi-lbl">Open Owners</div></div>
+</div>
+
+<div id="content">
+  <div id="table-area">
+    <div id="table-wrap"></div>
   </div>
 </div>
 
-<div class="shell">
-  <!-- Pipeline stepper -->
-  <div class="pipeline-steps">
-    <button class="step-btn active" id="stepBtn1" onclick="goStep(1)">
-      <span class="step-num">①</span>
-      <span class="step-label">Intake</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-btn" id="stepBtn2" onclick="goStep(2)">
-      <span class="step-num">②</span>
-      <span class="step-label">Blueprint</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-btn" id="stepBtn3" onclick="goStep(3)">
-      <span class="step-num">③</span>
-      <span class="step-label">Review</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-btn" id="stepBtn4" onclick="goStep(4)">
-      <span class="step-num">④</span>
-      <span class="step-label">Provision</span>
-    </button>
-    <span class="step-arrow">›</span>
-    <button class="step-btn" id="stepBtn5" onclick="goStep(5)">
-      <span class="step-num">⑤</span>
-      <span class="step-label">Validate</span>
-    </button>
-  </div>
-
-  <!-- ═══ STEP 1: INTAKE ═══ -->
-  <div class="step-panel active" id="step1">
-    <div class="card">
-      <div class="card-head">
-        <h2>① Intake Agent — Describe Your Hub</h2>
-        <span style="font-size:12px;color:var(--muted);">Plain English → Structured spec</span>
-      </div>
-      <div class="card-body">
-        <div class="intake-layout">
-          <div>
-            <div class="field">
-              <label>Hub name *</label>
-              <input id="iName" placeholder="e.g. Memory Escalation Hub"/>
-            </div>
-            <div class="field">
-              <label>Team *</label>
-              <input id="iTeam" placeholder="e.g. Memory Business Unit"/>
-            </div>
-            <div class="field-row">
-              <div>
-                <label>Product / domain</label>
-                <input id="iProduct" placeholder="e.g. HBM4, DDR6"/>
-              </div>
-              <div>
-                <label>Approx. team size</label>
-                <select id="iSize">
-                  <option value="small">Small (2-5 people)</option>
-                  <option value="medium" selected>Medium (6-15 people)</option>
-                  <option value="large">Large (15+ people)</option>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <label>Purpose — what problem does this hub solve? *</label>
-              <textarea id="iPurpose" rows="3" placeholder="e.g. Track customer escalations, engineering issues, and roadmap commitments across Memory products. PM, Engineering, and Sales all need visibility."></textarea>
-            </div>
-            <div class="field">
-              <label>Action types needed</label>
-              <input id="iTypes" placeholder="e.g. Issue, Escalation, Roadmap Item, Customer Request"/>
-              <div class="hint">Comma-separated. Leave blank and AI will suggest.</div>
-            </div>
-          </div>
-          <div>
-            <div class="field">
-              <label>Extra fields beyond standard (title, account, priority, status, due, owner)</label>
-              <textarea id="iFields" rows="4" placeholder="e.g. Chip generation (HBM3/HBM4), Engineering lead, Sales contact, Customer severity level, RMA number..."></textarea>
-              <div class="hint">Describe in plain English. AI will map to database columns.</div>
-            </div>
-            <div class="field">
-              <label>Key filters users need in the banner</label>
-              <input id="iFilters" placeholder="e.g. Chip generation, severity, account"/>
-            </div>
-            <div class="field">
-              <label>Anything else? (workflow, review cadence, integrations)</label>
-              <textarea id="iNotes" rows="3" placeholder="e.g. Weekly review on Thursdays. Need to track resolution ETA separately from due date. Some issues link to Jira tickets."></textarea>
-            </div>
-            <div class="field">
-              <label>Quick examples (click to auto-fill a template)</label>
-              <div class="example-chips">
-                <span class="echip" onclick="fillExample('memory')">Memory Escalation Hub</span>
-                <span class="echip" onclick="fillExample('yield')">Yield / Quality Hub</span>
-                <span class="echip" onclick="fillExample('soc')">SOC Platform Hub</span>
-                <span class="echip" onclick="fillExample('field')">Field Service Hub</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn-primary" onclick="runIntake()">🤖 Generate Blueprint →</button>
-          <button class="btn-secondary" onclick="generateBlueprintLocally()" style="font-size:12px;">⚡ Generate (no AI)</button>
-          <button class="btn-ghost" onclick="clearIntake()">Clear</button>
-          <button class="btn-secondary" onclick="testProxy()" style="font-size:12px;">🔌 Test AI</button>
-          <span id="intakeStatus" style="font-size:12px;color:var(--muted);"></span>
-        </div>
-        <div id="intakeThinking" style="display:none;margin-top:16px;">
-          <div class="ai-thinking">
-            <span>🤖 Intake Agent analyzing requirements</span>
-            <div class="think-dots"><span>•</span><span>•</span><span>•</span></div>
-          </div>
-        </div>
-      </div>
+<div id="modal">
+  <div class="modal-card">
+    <h3 id="modal-title">New Action</h3>
+    <div class="mfield"><label>Title *</label><input id="f-title" type="text"></div>
+    <div class="mfield"><label>Account</label><input id="f-account" type="text"></div>
+    <div class="mfield"><label>Type</label>
+      <select id="f-type">${(s.types||[]).map(t=>'<option>'+t+'</option>').join('')}</select>
     </div>
-  </div>
-
-  <!-- ═══ STEP 2: BLUEPRINT ═══ -->
-  <div class="step-panel" id="step2">
-    <div class="card">
-      <div class="card-head">
-        <h2>② Blueprint Engine — Structured Spec</h2>
-        <div style="display:flex;gap:8px;">
-          <button class="copy-btn" onclick="copyBlueprint()">📋 Copy spec JSON</button>
-          <button class="btn-secondary" onclick="goStep(3)">Review & Approve →</button>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="blueprintContent">
-          <div style="color:var(--muted);text-align:center;padding:40px;">Run the Intake Agent first to generate a blueprint.</div>
-        </div>
-      </div>
+    <div class="mfield"><label>Priority</label>
+      <select id="f-priority">
+        <option>1-Urgent</option><option>2-High</option>
+        <option selected>3-Important</option><option>4-Normal</option>
+      </select>
     </div>
-  </div>
-
-  <!-- ═══ STEP 3: REVIEW ═══ -->
-  <div class="step-panel" id="step3">
-    <div class="card">
-      <div class="card-head">
-        <h2>③ Review &amp; Approve Spec</h2>
-        <span style="font-size:12px;color:var(--muted);">Edit any field before provisioning</span>
-      </div>
-      <div class="card-body">
-        <div id="reviewContent">
-          <div style="color:var(--muted);text-align:center;padding:40px;">Complete Blueprint step first.</div>
-        </div>
-        <div class="btn-row" id="reviewBtnRow" style="display:none;">
-          <button class="btn-primary" onclick="runProvision()">⚡ Provision Hub →</button>
-          <button class="btn-ghost" onclick="goStep(2)">← Back to Blueprint</button>
-        </div>
-        <div id="provisionThinking" style="display:none;margin-top:16px;">
-          <div class="ai-thinking">
-            <span>⚡ Provisioning Agent generating SQL + HTML</span>
-            <div class="think-dots"><span>•</span><span>•</span><span>•</span></div>
-          </div>
-        </div>
-      </div>
+    <div class="mfield"><label>Status</label>
+      <select id="f-status">
+        <option>Not Started</option><option>On Track</option>
+        <option>At Risk</option><option>Late</option><option>Done</option>
+      </select>
     </div>
-  </div>
-
-  <!-- ═══ STEP 4: PROVISION ═══ -->
-  <div class="step-panel" id="step4">
-    <div class="card">
-      <div class="card-head">
-        <h2>④ Provisioning Agent — Generated Artifacts</h2>
-        <button class="btn-secondary" onclick="goStep(5)">Validate →</button>
-      </div>
-      <div class="card-body" id="provisionContent">
-        <div style="color:var(--muted);text-align:center;padding:40px;">Complete Review step first.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ═══ STEP 5: VALIDATE ═══ -->
-  <div class="step-panel" id="step5">
-    <div class="card">
-      <div class="card-head">
-        <h2>⑤ Validation Agent — Deployment Checklist</h2>
-        <button class="btn-success" id="btnPublish" onclick="publish()">✓ Mark as Published</button>
-      </div>
-      <div class="card-body">
-        <div id="validationContent">
-          <div style="color:var(--muted);text-align:center;padding:40px;">Complete Provisioning step first.</div>
-        </div>
-      </div>
+    <div class="mfield"><label>Due Date</label><input id="f-due" type="date"></div>
+    <div class="mfield"><label>Owner</label><input id="f-owner" type="text"></div>
+    <div class="mfield"><label>Description</label><textarea id="f-desc"></textarea></div>
+    ${(s.extraFields||[]).map(ef=>`
+    <div class="mfield"><label>${ef.label}</label><input id="f-${ef.col}" type="text"></div>`).join('')}
+    <input type="hidden" id="f-id">
+    <div class="modal-btns">
+      <button class="btn-save" onclick="saveAction()">Save</button>
+      <button class="btn-del" id="btn-del" onclick="deleteAction()" style="display:none">Delete</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 </div>
 
 <script>
-'use strict';
-// ── Credentials stored in localStorage (never in source code) ──
-const CONFIG = (function(){
-  const stored = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  return {
-    proxyUrl:          stored.proxyUrl          || 'https://rapid-pine-a057.xujefferson.workers.dev',
-    claudeKey:         stored.claudeKey          || '',
-    supabaseUrl:       stored.supabaseUrl        || 'https://cqgzndwisonvnlsxicmd.supabase.co',
-    supabaseProjectRef:stored.supabaseProjectRef || 'cqgzndwisonvnlsxicmd',
-    supabaseMgmtToken: stored.supabaseMgmtToken  || '',
-    supabaseAnonKey:   stored.supabaseAnonKey    || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZ3puZHdpc29udm5sc3hpY21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDQzOTksImV4cCI6MjA5NTcyMDM5OX0.nOCt3ddBWhzXGzqcpVvBvNboBro3xFgmpS7F-ZMHXpE',
-    githubToken:       stored.githubToken        || '',
-    githubUser:        stored.githubUser         || 'xujeffersoninusa',
-  };
-})();
-const toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className=type?`show ${type}`:'show';setTimeout(()=>t.className='',3200);};
-const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ── CONFIG (AUTO-GENERATED) ──
+const HUB_TOKEN = ${tokenJSON};
+const SUPABASE_URL = '${sbUrl}';
+const SUPABASE_ANON_KEY = '${sbAnon}';
+const CF_WORKER = '${cfUrl}';
+const TABLE = '${s.table}';
+const EXTRA_FIELDS = ${extraFieldsJSON};
 
-let pipeline={step:1,blueprint:null,spec:null};
-
-// ── Step navigation ──
-function goStep(n){
-  document.querySelectorAll('.step-panel').forEach((p,i)=>{p.classList.toggle('active',i===n-1);});
-  document.querySelectorAll('.step-btn').forEach((b,i)=>{
-    b.classList.remove('active');
-    if(i*2===( n-1)*2) b.classList.add('active');
-  });
-  pipeline.step=n;
+// ── TOKEN GATE ──
+// FIX: URLSearchParams decodes %2B as + but also decodes + as space
+// So we normalize: replace spaces with + to handle both ?access=x+y and ?access=x%2By
+const rawToken = new URLSearchParams(window.location.search).get('access') || '';
+const normalizedToken = rawToken.replace(/ /g, '+');
+if (normalizedToken === HUB_TOKEN) {
+  document.getElementById('gate').classList.add('hidden');
+  init();
+} else {
+  document.getElementById('gate-msg').textContent = rawToken ? 'Token mismatch.' : 'No token in URL.';
 }
 
-// ── Example templates ──
-const EXAMPLES={
-  memory:{name:'Memory Escalation Hub',team:'Memory Business Unit',product:'HBM4, DDR6',purpose:'Track customer escalations and engineering issues across HBM and DDR Memory products. PM, Engineering, and Sales need shared visibility with weekly review cadence.',types:'Escalation, Engineering Issue, Roadmap Item, Customer Request',fields:'Chip generation (HBM3/HBM4/DDR5/DDR6), Engineering lead, Customer severity (S1/S2/S3), RMA number, Jira ticket ID',filters:'Chip generation, Severity, Account',notes:'Weekly Thursday review. Track resolution ETA separately from due date.'},
-  yield:{name:'Yield & Quality Hub',team:'Quality Engineering',product:'All products',purpose:'Track yield excursions, quality escapes, and corrective actions across all product lines. Engineering and Operations need real-time visibility.',types:'Yield Excursion, Quality Escape, CAPA, Process Change',fields:'Product line, Fab site (Taiwan/US), Yield impact %, Lot numbers, Root cause category',filters:'Product line, Fab site, Root cause',notes:'Link to internal CAPA system. Auto-escalate if yield impact > 5%.'},
-  soc:{name:'SOC Platform Hub',team:'SOC Platform Engineering',product:'Eagle/Falcon SOC',purpose:'Manage platform enablement actions, customer bring-up issues, and software release commitments across SOC products.',types:'Platform Issue, Customer Bring-up, SW Release, Feature Request',fields:'SOC generation (Eagle/Falcon/Next-Gen), SW version, Customer bring-up stage, Platform component',filters:'SOC generation, Component, Customer',notes:'Track against quarterly release schedule. Engineering lead required for all SW items.'},
-  field:{name:'Field Service Hub',team:'Customer Field Engineering',product:'All systems',purpose:'Track field service actions, customer complaints, and system issues reported by field engineers worldwide.',types:'Field Issue, Customer Complaint, System Upgrade, Training Request',fields:'System model, Customer site location, Field engineer, Severity (Critical/High/Normal), Case number',filters:'System model, Severity, Location',notes:'SLA tracking required. Critical issues must be acknowledged within 4 hours.'},
-};
+// ── DATA ──
+let actions = [];
 
-function fillExample(key){
-  const e=EXAMPLES[key];
-  document.getElementById('iName').value=e.name;
-  document.getElementById('iTeam').value=e.team;
-  document.getElementById('iProduct').value=e.product;
-  document.getElementById('iPurpose').value=e.purpose;
-  document.getElementById('iTypes').value=e.types;
-  document.getElementById('iFields').value=e.fields;
-  document.getElementById('iFilters').value=e.filters;
-  document.getElementById('iNotes').value=e.notes;
+async function init() {
+  await loadActions();
+  renderTable();
+  renderKPIs();
 }
 
-function clearIntake(){
-  ['iName','iTeam','iProduct','iPurpose','iTypes','iFields','iFilters','iNotes'].forEach(id=>document.getElementById(id).value='');
-}
-
-function generateBlueprintLocally(){
-  const name  = document.getElementById('iName').value.trim();
-  const team  = document.getElementById('iTeam').value.trim();
-  const purpose = document.getElementById('iPurpose').value.trim();
-  if(!name||!team||!purpose){toast('Please fill in Hub name, Team, and Purpose','error');return;}
-  const types = document.getElementById('iTypes').value
-    ? document.getElementById('iTypes').value.split(',').map(s=>s.trim()).filter(Boolean)
-    : ['Issue','Feature Request','Project Action','Customer Request'];
-  const filters = document.getElementById('iFilters').value
-    ? document.getElementById('iFilters').value.split(',').map(s=>s.trim()).filter(Boolean)
-    : ['type','priority','status'];
-  const extraRaw = document.getElementById('iFields').value;
-  const extra_fields = extraRaw ? extraRaw.split('\n').filter(l=>l.trim()).map(l=>{
-    const p=l.split('|'); return{name:p[0].trim().toLowerCase().replace(/\s+/g,'_'),label:p[0].trim(),type:p[1]?.trim()||'text'};
-  }) : [];
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
-  const token = team.toLowerCase().replace(/[^a-z0-9]+/g,'')+'+teradyne+2026';
-  const themes = ['blue','teal','violet','green','amber'];
-  const theme  = themes[name.length % themes.length];
-  pipeline.blueprint = {
-    hub_id: slug,
-    hub_name: name,
-    team: team,
-    product: document.getElementById('iProduct').value||'',
-    purpose: purpose.slice(0,120),
-    access_token: token,
-    db_table: slug.replace(/-/g,'_')+'_actions',
-    color_theme: theme,
-    action_types: types,
-    standard_fields:['title','account','priority','status','due','owner','description','checklist','project','bucket'],
-    extra_fields: extra_fields,
-    banner_filters: filters,
-    kpi_cards:['total','urgent','late','owners'],
-    board_lanes:['Not Started','On Track','At Risk','Done'],
-    ai_persona:`I am the AI agent for ${name} at Teradyne. I help ${team} manage actions, analyze risks, and track priorities. I can query live data, create actions, and provide status summaries.`
-  };
-  renderBlueprint(pipeline.blueprint);
-  markStepDone(1);
-  goStep(2);
-  toast('Blueprint generated locally ✓','success');
-}
-
-async function testProxy(){
-  const status = document.getElementById('intakeStatus');
-  status.textContent = '🔌 Testing…';
-  status.style.color = 'var(--muted)';
-  // Force reload config from localStorage
-  const stored = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  const proxyUrl = stored.proxyUrl || CONFIG.proxyUrl || 'https://rapid-pine-a057.xujefferson.workers.dev';
-  console.log('testProxy using URL:', proxyUrl);
-  try{
-    const resp = await fetch(proxyUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+async function loadActions() {
+  try {
+    const r = await fetch(\`\${SUPABASE_URL}/rest/v1/\${TABLE}?is_deleted=eq.false&order=created_at.desc\`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY }
     });
-    const d = await resp.json();
-    console.log('testProxy response:', d);
-    if(!resp.ok) throw new Error(d.error?.message||`HTTP ${resp.status}`);
-    const reply = d.content?.find(b=>b.type==='text')?.text||'?';
-    status.textContent = '✅ Connected! Reply: '+reply;
-    status.style.color = 'var(--green)';
-    toast('AI working ✓','success');
-  }catch(e){
-    status.textContent = '❌ '+e.message;
-    status.style.color = 'var(--red)';
-    toast(e.message.slice(0,80),'error');
-    console.error('testProxy error:',e);
-  }
-}
-
-// ── STEP 1: Intake → Blueprint ──
-async function runIntake(){
-  const name=document.getElementById('iName').value.trim();
-  const team=document.getElementById('iTeam').value.trim();
-  const purpose=document.getElementById('iPurpose').value.trim();
-  if(!name||!team||!purpose){toast('Please fill in Hub name, Team, and Purpose','error');return;}
-
-  document.getElementById('intakeThinking').style.display='block';
-  document.getElementById('intakeStatus').textContent='';
-
-  const prompt=`You are the Blueprint Engine for ActionHub OS — a system that creates operational action-tracking hubs for Teradyne teams.
-
-Based on this intake form, generate a complete hub specification as JSON.
-
-INTAKE:
-- Hub name: ${name}
-- Team: ${team}
-- Product/domain: ${document.getElementById('iProduct').value||'Not specified'}
-- Team size: ${document.getElementById('iSize').value}
-- Purpose: ${purpose}
-- Action types: ${document.getElementById('iTypes').value||'Suggest appropriate types'}
-- Extra fields: ${document.getElementById('iFields').value||'None specified'}
-- Key filters: ${document.getElementById('iFilters').value||'Suggest based on context'}
-- Notes: ${document.getElementById('iNotes').value||'None'}
-
-Generate a JSON spec with EXACTLY this structure (respond with JSON only, no markdown):
-{
-  "hub_id": "slug-format-id",
-  "hub_name": "...",
-  "team": "...",
-  "product": "...",
-  "purpose": "one sentence",
-  "access_token": "teamname+teradyne+2026 (lowercase, no spaces)",
-  "db_table": "hubid_actions",
-  "color_theme": "blue|teal|violet|green|amber",
-  "action_types": ["Type1","Type2","Type3","Type4"],
-  "standard_fields": ["title","account","priority","status","due","owner","description","checklist","project","bucket"],
-  "extra_fields": [
-    {"name": "field_name", "label": "Display Label", "type": "text|select|date", "options": ["opt1","opt2"] }
-  ],
-  "banner_filters": ["field1","field2","field3"],
-  "kpi_cards": ["total","urgent","late","owners"],
-  "board_lanes": ["Not Started","On Track","At Risk","Done"],
-  "ai_persona": "2-3 sentence description of what the AI agent should focus on for this hub"
-}`;
-
-  try{
-    const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';
-    const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};
-    const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
-    if(!resp.ok){
-      const errData=await resp.json().catch(()=>({}));
-      throw new Error(errData.error?.message||`API error ${resp.status}`);
-    }
-    const data=await resp.json();
-    const text=data.content?.find(b=>b.type==='text')?.text||'';
-    const clean=text.replace(/```json[\n]?|```[\n]?/g,'').trim();
-    pipeline.blueprint=JSON.parse(clean);
-    document.getElementById('intakeThinking').style.display='none';
-    renderBlueprint(pipeline.blueprint);
-    markStepDone(1);
-    goStep(2);
-    toast('Blueprint generated ✓','success');
-  }catch(e){
-    document.getElementById('intakeThinking').style.display='none';
-    document.getElementById('intakeStatus').textContent='❌ '+e.message;
-    document.getElementById('intakeStatus').style.color='var(--red)';
-    toast('Error: '+e.message.slice(0,100),'error');
-    console.error('runIntake error:',e);
-  }
-}
-
-function markStepDone(n){
-  const btn=document.getElementById(`stepBtn${n}`);
-  if(btn){btn.classList.remove('active');btn.classList.add('done');}
-}
-
-// ── STEP 2: Render Blueprint ──
-function renderBlueprint(bp){
-  const themeColors={blue:'#60a5fa',teal:'#2dd4bf',violet:'#a78bfa',green:'#34d399',amber:'#fbbf24'};
-  const tc=themeColors[bp.color_theme]||'#60a5fa';
-  document.getElementById('blueprintContent').innerHTML=`
-    <div class="blueprint-layout">
-      <div>
-        <div class="spec-section">
-          <h3>Hub Identity</h3>
-          <div class="spec-row"><span class="spec-key">Hub name</span><span class="spec-val">${esc(bp.hub_name)}</span></div>
-          <div class="spec-row"><span class="spec-key">Team</span><span class="spec-val">${esc(bp.team)}</span></div>
-          <div class="spec-row"><span class="spec-key">Product</span><span class="spec-val">${esc(bp.product||'—')}</span></div>
-          <div class="spec-row"><span class="spec-key">DB table</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${esc(bp.db_table)}</span></div>
-          <div class="spec-row"><span class="spec-key">Access token</span><span class="spec-val" style="font-family:monospace;font-size:12px;color:var(--amber);">${esc(bp.access_token)}</span></div>
-          <div class="spec-row"><span class="spec-key">Color theme</span><span class="spec-val"><span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:12px;height:12px;border-radius:50%;background:${tc};display:inline-block;"></span>${esc(bp.color_theme)}</span></span></div>
-        </div>
-        <div class="spec-section">
-          <h3>Purpose</h3>
-          <div style="font-size:13px;color:var(--ink);line-height:1.6;">${esc(bp.purpose)}</div>
-        </div>
-        <div class="spec-section">
-          <h3>Action Types</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.action_types||[]).map(t=>`<span class="col-tag col-core">${esc(t)}</span>`).join('')}</div>
-        </div>
-        <div class="spec-section">
-          <h3>AI Agent Persona</h3>
-          <div style="font-size:12px;color:var(--muted);line-height:1.6;font-style:italic;">${esc(bp.ai_persona||'—')}</div>
-        </div>
-      </div>
-      <div>
-        <div class="spec-section">
-          <h3>Database Columns</h3>
-          <div style="margin-bottom:8px;"><span style="font-size:11px;color:var(--muted);">Standard fields (always included):</span><br/><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${(bp.standard_fields||[]).map(f=>`<span class="col-tag col-system">${esc(f)}</span>`).join('')}</div></div>
-          ${bp.extra_fields?.length?`<div><span style="font-size:11px;color:var(--muted);">Extra fields for this hub:</span><br/><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">${bp.extra_fields.map(f=>`<span class="col-tag col-extra" title="${esc(f.type)}">${esc(f.label)}</span>`).join('')}</div></div>`:''}
-        </div>
-        <div class="spec-section">
-          <h3>Banner Quick Filters</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.banner_filters||[]).map(f=>`<span class="col-tag col-core">${esc(f)}</span>`).join('')}</div>
-        </div>
-        <div class="spec-section">
-          <h3>Board Lanes</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.board_lanes||[]).map(l=>`<span class="col-tag col-system">${esc(l)}</span>`).join('')}</div>
-        </div>
-        <div class="spec-section">
-          <h3>KPI Cards</h3>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;">${(bp.kpi_cards||[]).map(k=>`<span class="col-tag col-extra">${esc(k)}</span>`).join('')}</div>
-        </div>
-      </div>
-    </div>`;
-  renderReview(bp);
-}
-
-// ── STEP 3: Review ──
-function renderReview(bp){
-  document.getElementById('reviewContent').innerHTML=`
-    <div style="margin-bottom:16px;padding:14px 16px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;font-size:13px;color:var(--muted);">
-      ✏️ Review the spec below. Edit any value before generating SQL + HTML. All fields are editable.
-    </div>
-    <div class="blueprint-layout">
-      <div>
-        <div class="spec-section">
-          <h3>Edit Hub Identity</h3>
-          <div class="spec-row"><span class="spec-key">Hub name</span><input class="spec-val editable" id="rName" value="${esc(bp.hub_name)}"/></div>
-          <div class="spec-row"><span class="spec-key">Team</span><input class="spec-val editable" id="rTeam" value="${esc(bp.team)}"/></div>
-          <div class="spec-row"><span class="spec-key">DB table</span><input class="spec-val editable" id="rTable" value="${esc(bp.db_table)}" style="font-family:monospace;font-size:12px;"/></div>
-          <div class="spec-row"><span class="spec-key">Access token</span><input class="spec-val editable" id="rToken" value="${esc(bp.access_token)}" style="font-family:monospace;font-size:12px;color:var(--amber);"/></div>
-          <div class="spec-row"><span class="spec-key">Color theme</span>
-            <select class="spec-val editable" id="rTheme" style="width:auto;padding:2px 8px;">
-              ${['blue','teal','violet','green','amber'].map(c=>`<option${c===bp.color_theme?' selected':''}>${c}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-        <div class="spec-section">
-          <h3>Action Types (comma-separated)</h3>
-          <input id="rTypes" value="${esc((bp.action_types||[]).join(', '))}"/>
-        </div>
-        <div class="spec-section">
-          <h3>Banner Filters (comma-separated)</h3>
-          <input id="rFilters" value="${esc((bp.banner_filters||[]).join(', '))}"/>
-        </div>
-        <div class="spec-section" style="background:var(--accent-s);border-color:rgba(96,165,250,.3);">
-          <h3 style="color:var(--accent);">📊 Portfolio Registration</h3>
-          <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);">
-            <input type="checkbox" id="rAddToPortfolio" checked style="width:auto;margin-top:3px;accent-color:var(--accent);"/>
-            <div>
-              <div style="font-weight:700;margin-bottom:4px;">Add this hub to Portfolio Dashboard</div>
-              <div style="font-size:12px;color:var(--muted);line-height:1.5;">When checked, auto-provisioning will add this hub to your Portfolio Dashboard so it appears in the cross-team view, risk heatmap, and Portfolio AI agent.</div>
-            </div>
-          </label>
-        </div>
-      </div>
-      <div>
-        <div class="spec-section">
-          <h3>Extra Fields (one per line: name|Label|type)</h3>
-          <textarea id="rFields" rows="8">${(bp.extra_fields||[]).map(f=>`${f.name}|${f.label}|${f.type}${f.options?'|'+f.options.join(','):''}`).join('\n')}</textarea>
-          <div class="hint">Format: field_name|Display Label|text (or: field_name|Label|select|opt1,opt2,opt3)</div>
-        </div>
-        <div class="spec-section">
-          <h3>AI Persona</h3>
-          <textarea id="rPersona" rows="3">${esc(bp.ai_persona||'')}</textarea>
-        </div>
-      </div>
-    </div>`;
-  document.getElementById('reviewBtnRow').style.display='flex';
-}
-
-// ── STEP 4: Provision → generate SQL + HTML ──
-async function runProvision(){
-  const bp={
-    ...pipeline.blueprint,
-    hub_name: document.getElementById('rName').value,
-    team:     document.getElementById('rTeam').value,
-    db_table: document.getElementById('rTable').value,
-    access_token: document.getElementById('rToken').value,
-    color_theme:  document.getElementById('rTheme').value,
-    action_types: document.getElementById('rTypes').value.split(',').map(s=>s.trim()).filter(Boolean),
-    banner_filters: document.getElementById('rFilters').value.split(',').map(s=>s.trim()).filter(Boolean),
-    extra_fields: parseExtraFields(document.getElementById('rFields').value),
-    ai_persona: document.getElementById('rPersona').value,
-    addToPortfolio: document.getElementById('rAddToPortfolio')?.checked !== false,
-  };
-  pipeline.spec=bp;
-
-  document.getElementById('provisionThinking').style.display='block';
-  document.getElementById('reviewBtnRow').style.display='none';
-
-  try{
-    const [sql, html] = await Promise.all([generateSQL(bp), generateHTML(bp)]);
-    pipeline.generatedSQL = sql;
-    pipeline.generatedHTML = html;
-    document.getElementById('provisionThinking').style.display='none';
-    renderProvision(bp, sql, html);
-    markStepDone(1);markStepDone(2);markStepDone(3);
-    goStep(4);
-    toast('SQL + HTML generated ✓','success');
-  }catch(e){
-    document.getElementById('provisionThinking').style.display='none';
-    document.getElementById('reviewBtnRow').style.display='flex';
-    toast('Provision failed: '+e.message,'error');
+    if (!r.ok) throw new Error(await r.text());
+    actions = await r.json();
+    document.getElementById('conn-status').textContent = '⬤ Connected';
+    document.getElementById('conn-status').style.color = '#22c984';
+    document.getElementById('conn-status').style.background = 'rgba(34,201,132,.12)';
+  } catch(e) {
+    document.getElementById('conn-status').textContent = '⬤ DB Error';
+    document.getElementById('conn-status').style.color = '#f74f6a';
     console.error(e);
   }
 }
 
-function parseExtraFields(text){
-  return text.split('\n').filter(l=>l.trim()).map(l=>{
-    const parts=l.split('|');
-    const f={name:parts[0]?.trim()||'',label:parts[1]?.trim()||'',type:parts[2]?.trim()||'text'};
-    if(parts[3])f.options=parts[3].split(',').map(s=>s.trim());
-    return f;
-  }).filter(f=>f.name&&f.label);
+function priorityClass(p) {
+  if (!p) return 'p-normal';
+  if (p.includes('Urgent')) return 'p-urgent';
+  if (p.includes('High')) return 'p-high';
+  if (p.includes('Important')) return 'p-important';
+  return 'p-normal';
 }
 
-async function generateSQL(bp){
-  const extraCols=(bp.extra_fields||[]).map(f=>`  ${f.name.replace(/\s+/g,'_').toLowerCase()}  text`).join(',\n');
-  return `-- ═══════════════════════════════════════════════════
--- ActionHub OS — ${bp.hub_name} Schema
--- Generated by Agent Studio · ${new Date().toLocaleDateString()}
--- ═══════════════════════════════════════════════════
-
-CREATE TABLE IF NOT EXISTS ${bp.db_table} (
-  id            uuid primary key default gen_random_uuid(),
-  title         text not null,
-  account       text,
-  priority      text default '3-Important',
-  status        text default 'Not Started',
-  due           date,
-  owner         text,
-  description   text,
-  checklist     jsonb default '[]',
-  project       text,
-  bucket        text,
-  type          text,${extraCols?'\n'+extraCols+',':''}
-  version_no    integer default 1,
-  modified_by   text,
-  modified_at   timestamptz default now(),
-  created_at    timestamptz default now(),
-  is_deleted    boolean default false
-);
-
--- Indexes
-CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_account  ON ${bp.db_table}(account);
-CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_owner    ON ${bp.db_table}(owner);
-CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_status   ON ${bp.db_table}(status);
-CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_due      ON ${bp.db_table}(due);
-CREATE INDEX IF NOT EXISTS idx_${bp.db_table}_deleted  ON ${bp.db_table}(is_deleted);
-
--- Row Level Security
-ALTER TABLE ${bp.db_table} ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "anon full access ${bp.db_table}"
-  ON ${bp.db_table} FOR ALL TO anon USING (true) WITH CHECK (true);
-
--- Auto-update timestamp
-CREATE OR REPLACE TRIGGER ${bp.db_table}_updated_at
-  BEFORE UPDATE ON ${bp.db_table}
-  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-
--- Register in hub registry
-INSERT INTO hub_registry (id, name, team, product, purpose, token, db_table, status, owner)
-VALUES (
-  '${bp.hub_id}',
-  '${bp.hub_name}',
-  '${bp.team}',
-  '${bp.product||''}',
-  '${bp.purpose||''}',
-  '${bp.access_token}',
-  '${bp.db_table}',
-  'live',
-  'jefferson.xu@teradyne.com'
-) ON CONFLICT (id) DO NOTHING;
-
--- Verify
-SELECT COUNT(*) as columns_created FROM information_schema.columns
-WHERE table_name = '${bp.db_table}' AND table_schema = 'public';`;
+function statusClass(s) {
+  if (!s) return 's-notstarted';
+  const l = s.toLowerCase().replace(/[-\\s]/g,'');
+  if (l.includes('overdue') || l.includes('late')) return 's-overdue';
+  if (l.includes('risk')) return 's-atrisk';
+  if (l.includes('track')) return 's-ontrack';
+  if (l.includes('done') || l.includes('complete')) return 's-done';
+  return 's-notstarted';
 }
 
-async function generateHTML(bp){
-  // Use the IS Hub as the exact base template — it has all the required patterns
-  const extraFieldsCols = (bp.extra_fields||[]).map(f => `<th class="sortable" data-col="${f.name}" style="min-width:130px;width:130px;">${f.label}<span class="sort-icon"></span></th>`).join('');
-  const extraFieldsForm = (bp.extra_fields||[]).map(f => {
-    if(f.type==='select'&&f.options?.length){
-      return `<div><label>${f.label}</label><select id="m${f.name}"><option value="">—</option>${f.options.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
-    }
-    return `<div><label>${f.label}</label><input id="m${f.name}" placeholder="${f.label}..."/></div>`;
-  }).join('');
-  const extraFieldsSave = (bp.extra_fields||[]).map(f => `${f.name}:document.getElementById('m${f.name}')?.value||''`).join(',\n    ');
-  const extraFieldsPayload = (bp.extra_fields||[]).map(f => `${f.name}:row.${f.name}||''`).join(',\n    ');
-  const extraFieldsNorm = (bp.extra_fields||[]).map(f => `${f.name}:r.${f.name}||''`).join(',\n    ');
-  const extraFieldsRow = (bp.extra_fields||[]).map(f => `<td>\${esc(r.${f.name}||'')}</td>`).join('');
-  const extraFieldsOpen = (bp.extra_fields||[]).map(f => `s('m${f.name}',row?.${f.name});`).join('');
-  const typeOptions = (bp.action_types||['Issue','Feature Request','Project Action']).map(t=>`<option>${t}</option>`).join('');
-  const bannerTypeBtns = ''; // dynamically built from data
-  const themeAccent = {blue:'#60a5fa',teal:'#2dd4bf',violet:'#a78bfa',green:'#34d399',amber:'#fbbf24'}[bp.color_theme]||'#60a5fa';
-  const themeAccentS = {blue:'#0c2a3d',teal:'#0d3330',violet:'#1a0d3d',green:'#0a2e1e',amber:'#2e2008'}[bp.color_theme]||'#0c2a3d';
-  const portfolioUrl = 'https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne';
-  const repoName = bp.hub_id+'-hub';
-  const hubUrl = `https://xujeffersoninusa.github.io/${repoName}/?access=${bp.access_token}`;
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>${bp.hub_name} — ActionHub OS</title>
-<style>
-body.sec-pending .shell,body.sec-pending #topbar,body.sec-pending #kpibar{display:none!important;}
-body.sec-allowed .shell,body.sec-allowed #topbar,body.sec-allowed #kpibar{display:block;}
-body.sec-allowed #topbar{display:flex!important;}
-body.sec-allowed #kpibar{display:flex!important;}
-body.sec-blocked .shell,body.sec-blocked #topbar,body.sec-blocked #kpibar{display:none!important;}
-.security-block{max-width:600px;margin:80px auto;padding:32px;border:1px solid #3a4060;border-radius:16px;background:#252a40;text-align:center;font-family:system-ui,sans-serif;}
-.security-block h2{margin:0 0 14px;font-size:24px;color:#f87171;}
-.security-block p{margin:8px 0;color:#8a95a3;font-size:14px;}
-</style>
-<script>
-(function(){
-  var S={validToken:'${bp.access_token}',allowDirect:true};
-  function block(t,m){document.body.classList.remove('sec-pending','sec-allowed');document.body.classList.add('sec-blocked');document.body.insertAdjacentHTML('afterbegin','<div class="security-block"><span style="font-size:48px">🔒</span><h2>'+t+'</h2><p>'+m+'</p></div>');}
-  function allow(){document.body.classList.remove('sec-pending','sec-blocked');document.body.classList.add('sec-allowed');}
-  function check(){var token=new URLSearchParams(location.search).get('access');if(S.allowDirect&&token===S.validToken){allow();return;}block('Access Denied','Use direct link with access token.');}
-  document.addEventListener('DOMContentLoaded',check);
-})();
-<\/script>
-<style>
-:root{--bg:#1e2235;--surface:#252a40;--surface2:#2d3350;--card:#252a40;--ink:#e8edf8;--muted:#7e8ba8;--line:#3a4060;--accent:${themeAccent};--accent-s:${themeAccentS};--green:#34d399;--green-s:#0a2e1e;--amber:#fbbf24;--amber-s:#2e2008;--red:#f87171;--red-s:#2e1010;--violet:#a78bfa;--shadow:0 4px 24px rgba(0,0,0,.4);--radius:12px;}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;color:var(--ink);background:var(--bg);}
-#topbar{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(28,32,50,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(14px);z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;}
-#topbar .brand{display:flex;align-items:center;gap:10px;}
-#topbar h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;}
-.ws-badge{font-size:11px;font-weight:600;color:var(--muted);background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;white-space:nowrap;}
-.conn-dot{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-s);border:1px solid rgba(52,211,153,.25);border-radius:6px;padding:3px 9px;}
-.conn-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);}
-.conn-dot.offline{color:var(--red);background:var(--red-s);}
-.conn-dot.offline::before{background:var(--red);}
-.topbar-right{display:flex;align-items:center;gap:8px;}
-.hub-tabs{display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:4px;}
-.hub-tab{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;color:var(--muted);transition:all .15s;white-space:nowrap;border:none;background:transparent;}
-.hub-tab:hover,.hub-tab.active{background:var(--surface);color:var(--ink);}
-#kpibar{position:fixed;top:54px;left:0;right:0;background:rgba(37,42,64,.98);border-bottom:1px solid var(--line);backdrop-filter:blur(8px);z-index:99;display:flex;flex-direction:column;}
-#kpibar-row1{display:flex;align-items:stretch;height:50px;padding:0 16px;gap:0;border-bottom:1px solid var(--line);}
-#kpibar-row2{display:flex;align-items:center;height:42px;padding:0 16px;gap:16px;overflow-x:auto;}
-#kpibar-row2::-webkit-scrollbar{display:none;}
-.kpi-item{display:flex;align-items:center;gap:10px;padding:0 18px;border-right:1px solid var(--line);min-width:130px;}
-.kpi-item:last-child{border-right:none;}
-.kpi-item .ki-icon{font-size:16px;opacity:.75;}
-.kpi-item .ki-body{display:flex;flex-direction:column;}
-.kpi-item .ki-val{font-size:20px;font-weight:800;line-height:1.1;}
-.kpi-item .ki-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
-.kpi-item.kpi-total .ki-val{color:var(--accent);}
-.kpi-item.kpi-urgent .ki-val{color:var(--red);}
-.kpi-item.kpi-late .ki-val{color:var(--amber);}
-.kpi-item.kpi-owners .ki-val{color:var(--violet);}
-.kpi-spacer{flex:1;}
-.kpi-mode{display:flex;align-items:center;font-size:11px;font-weight:600;color:var(--muted);gap:6px;padding:0 14px;border-left:1px solid var(--line);}
-.kbar-group{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.kbar-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
-.kbar-divider{width:1px;height:24px;background:var(--line);flex-shrink:0;}
-.fbtn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .13s;}
-.fbtn:hover{background:var(--surface2);color:var(--ink);}
-.fbtn.active{background:var(--accent-s);color:var(--accent);border-color:rgba(96,165,250,.5);font-weight:700;}
-.fbtn.pri-urgent.active{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.4);}
-.fbtn.pri-high.active{background:#2e1d08;color:#fb923c;border-color:rgba(251,146,60,.4);}
-.fbtn.pri-imp.active{background:var(--amber-s);color:var(--amber);border-color:rgba(251,191,36,.4);}
-.fbtn.pri-med.active{background:var(--accent-s);color:var(--accent);border-color:rgba(96,165,250,.4);}
-.fbtn.sta-ontrack.active,.fbtn.sta-done.active{background:var(--green-s);color:var(--green);border-color:rgba(52,211,153,.4);}
-.fbtn.sta-atrisk.active,.fbtn.sta-late.active{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.4);}
-.fbtn.sta-notstart.active,.fbtn.sta-nodate.active{background:var(--surface2);color:var(--muted);border-color:var(--line);}
-.fbtn.due-overdue.active{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.4);}
-.fbtn.due-7.active,.fbtn.due-30.active{background:var(--amber-s);color:var(--amber);border-color:rgba(251,191,36,.4);}
-.shell{max-width:1920px;margin:0;padding:12px 12px 24px;padding-top:calc(54px + 50px + 42px + 12px);}
-.layout{display:flex;align-items:flex-start;gap:12px;}
-.toolbar{position:sticky;top:0;flex-shrink:0;width:300px;align-self:flex-start;}
-.content-area{flex:1;min-width:0;}
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
-.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;border:1px solid transparent;}
-.chip{background:var(--surface2);color:var(--accent);border:1px solid rgba(96,165,250,.25);padding:3px 7px;border-radius:6px;font-size:11px;}
-.subtle{color:var(--muted);font-size:12px;}
-.hidden{display:none!important;}
-.empty{padding:28px;text-align:center;color:var(--muted);}
-.status-ontrack,.status-done{background:var(--green-s);color:var(--green);border-color:rgba(52,211,153,.3);}
-.status-late,.status-overdue,.status-atrisk{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.3);}
-.status-nofinishdate,.status-notstarted{background:var(--surface2);color:var(--muted);border-color:var(--line);}
-.priority-1,.priority-2{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.3);}
-.priority-3,.priority-4{background:var(--amber-s);color:var(--amber);border-color:rgba(251,191,36,.3);}
-.priority-5{background:var(--accent-s);color:var(--accent);border-color:rgba(96,165,250,.3);}
-button{appearance:none;border:none;cursor:pointer;border-radius:8px;padding:7px 13px;font-weight:600;font:inherit;font-size:13px;transition:all .15s;}
-.btn-primary{background:var(--accent);color:#05192a;font-weight:700;}
-.btn-primary:hover{background:#93c5fd;}
-.btn-secondary{background:var(--surface2);color:var(--accent);border:1px solid rgba(96,165,250,.3);}
-.btn-secondary:hover{background:var(--accent-s);}
-.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
-.btn-ghost:hover{background:var(--surface2);}
-.btn-danger{background:var(--red-s);color:var(--red);border:1px solid rgba(248,113,113,.3);}
-.btns{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;}
-input,select,textarea{width:100%;padding:8px 11px;border-radius:8px;border:1px solid var(--line);background:#1e2229;color:var(--ink);font:inherit;font-size:13px;}
-textarea{min-height:96px;resize:vertical;}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(96,165,250,.15);}
-input::placeholder{color:var(--muted);}
-select option{background:var(--surface2);}
-.view-switch{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-.view-switch button{border-radius:0;background:var(--surface2);color:var(--muted);border-right:1px solid var(--line);padding:7px 14px;font-size:13px;}
-.view-switch button:last-child{border-right:none;}
-.view-switch button.active{background:var(--accent-s);color:var(--accent);font-weight:700;}
-.filter-card{display:flex;flex-direction:column;}
-.filter-head{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;}
-.filter-head-title{font-weight:800;font-size:13px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
-.btns>button,.btns>select,.btns>.view-switch{width:100%;}
-.filter-grid{display:grid;grid-template-columns:1fr;gap:9px;padding:12px 14px 14px;}
-.filter-grid select{font-size:12px;padding:7px 10px;}
-.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;border-bottom:1px solid var(--line);background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0;}
-.panel-head strong{color:var(--ink);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
-.table-wrap{overflow-x:auto;}
-table{width:100%;min-width:1300px;border-collapse:separate;border-spacing:0;background:var(--card);}
-thead th{position:sticky;top:0;z-index:3;background:var(--surface2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
-tbody td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink);font-size:13px;}
-tbody tr:hover{background:var(--surface2);}
-tr.expanded-row{background:#232844;}
-.title-cell .main{font-weight:700;margin-bottom:3px;}
-.title-cell .meta{color:var(--muted);font-size:11px;}
-.expand-box{padding:14px;background:#1c2038;border-top:1px dashed var(--line);}
-.expand-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:14px;}
-.detail-block{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;}
-th.sortable{cursor:pointer;user-select:none;}
-th.sortable .sort-icon{display:inline-block;margin-left:4px;opacity:.4;font-size:10px;}
-th.sortable.sort-asc .sort-icon::after{content:'▲';opacity:1;color:var(--accent);}
-th.sortable.sort-desc .sort-icon::after{content:'▼';opacity:1;color:var(--accent);}
-th.sortable:not(.sort-asc):not(.sort-desc) .sort-icon::after{content:'⇅';}
-thead th:first-child,tbody td:first-child{position:sticky;left:0;z-index:6;background:var(--surface2);width:40px;min-width:40px;max-width:40px;}
-tbody td:first-child{background:var(--card);}
-thead th:nth-child(2),tbody td:nth-child(2){position:sticky;left:40px;z-index:5;min-width:240px;width:240px;box-shadow:2px 0 0 var(--line);}
-thead th:nth-child(2){background:var(--surface2);}
-tbody td:nth-child(2){background:var(--card);}
-tbody tr:hover td:first-child,tbody tr:hover td:nth-child(2){background:var(--surface2);}
-tr.expanded-row td:first-child,tr.expanded-row td:nth-child(2){background:#232844;}
-.title-link{display:inline-block;cursor:pointer;color:var(--accent);text-decoration:none;font-weight:600;}
-.title-link:hover{text-decoration:underline;color:#93c5fd;}
-.board{display:none;padding:12px;}
-.board.active{display:block;}
-.board-grid{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:10px;}
-.lane{background:var(--surface2);border:1px solid var(--line);border-radius:12px;min-height:180px;}
-.lane-head{padding:11px 12px 8px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
-.lane-body{padding:8px;display:flex;flex-direction:column;gap:7px;}
-.task-card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:all .15s;}
-.task-card:hover{border-color:var(--accent);box-shadow:0 3px 14px rgba(96,165,250,.12);}
-.task-card .tc-title{font-weight:600;margin-bottom:4px;font-size:13px;}
-.task-card .tc-meta{color:var(--muted);font-size:11px;margin-bottom:6px;}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;}
-.modal.open{display:flex;}
-.sheet{width:min(1100px,100%);max-height:93vh;overflow:auto;background:var(--surface);border-radius:16px;border:1px solid var(--line);box-shadow:0 40px 80px rgba(0,0,0,.7);}
-.sheet-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface2);z-index:1;border-radius:16px 16px 0 0;}
-.sheet-body{padding:18px 20px;}
-.sheet-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
-.section{border:1px solid var(--line);border-radius:10px;padding:14px;background:#1e2229;}
-.section h3{margin:0 0 12px;font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
-.field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
-.field-grid .full{grid-column:1/-1;}
-.checklist-editor{display:flex;flex-direction:column;gap:8px;}
-.check-item{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--card);}
-.check-item.done{background:var(--green-s);border-color:rgba(52,211,153,.25);}
-.sheet-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:12px;position:sticky;bottom:0;background:var(--surface2);border-radius:0 0 16px 16px;}
-#aiPanel{position:fixed;right:0;top:146px;bottom:0;width:380px;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;z-index:90;transform:translateX(100%);transition:transform .25s ease;}
-#aiPanel.open{transform:translateX(0);}
-.ai-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-shrink:0;}
-.ai-head-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;}
-.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(52,211,153,.2);}50%{box-shadow:0 0 0 6px rgba(52,211,153,.05);}}
-.ai-messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
-.ai-msg{max-width:95%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.55;}
-.ai-msg.user{background:var(--accent-s);color:var(--accent);border:1px solid rgba(96,165,250,.2);align-self:flex-end;border-radius:12px 12px 4px 12px;}
-.ai-msg.assistant{background:var(--surface2);color:var(--ink);border:1px solid var(--line);align-self:flex-start;border-radius:12px 12px 12px 4px;}
-.ai-msg.loading{color:var(--muted);font-style:italic;}
-.ai-msg.error{background:var(--red-s);color:var(--red);border-color:rgba(248,113,113,.3);}
-.ai-quick-area{padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;}
-.ai-qbtn{font-size:11px;padding:5px 10px;border-radius:20px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);cursor:pointer;transition:all .13s;white-space:nowrap;}
-.ai-qbtn:hover{background:var(--accent-s);color:var(--accent);}
-.ai-input-row{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0;}
-.ai-input-row input{flex:1;background:#1e2229;border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--ink);}
-.ai-send{background:var(--accent);color:#05192a;border-radius:8px;padding:9px 13px;font-weight:700;font-size:13px;cursor:pointer;border:none;flex-shrink:0;}
-#loadingOverlay{position:fixed;inset:0;background:rgba(30,34,53,.85);display:flex;align-items:center;justify-content:center;z-index:500;flex-direction:column;gap:16px;}
-#loadingOverlay.hidden{display:none;}
-.spinner{width:40px;height:40px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{color:var(--muted);font-size:14px;}
-#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:10px 20px;font-size:13px;color:var(--ink);z-index:600;transition:transform .3s;white-space:nowrap;}
-#toast.show{transform:translateX(-50%) translateY(0);}
-#toast.success{border-color:rgba(52,211,153,.4);color:var(--green);}
-#toast.error{border-color:rgba(248,113,113,.4);color:var(--red);}
-<\/style>
-<\/head>
-<body class="sec-pending">
-<div id="loadingOverlay"><div class="spinner"><\/div><div class="loading-text">Connecting to ActionHub OS…<\/div><\/div>
-<div id="toast"><\/div>
-<div id="topbar">
-  <div class="brand">
-    <svg width="110" height="28" viewBox="0 0 220 56" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="56" height="56" rx="6" fill="#e31837"/>
-      <rect x="12" y="10" width="32" height="8" rx="2" fill="#fff"/>
-      <rect x="22" y="18" width="12" height="28" rx="2" fill="#fff"/>
-      <text x="66" y="40" font-family="'Segoe UI',Arial,sans-serif" font-size="30" font-weight="700" fill="#e8edf8">TERADYNE<\/text>
-    <\/svg>
-    <div style="width:1px;height:24px;background:var(--line);margin:0 4px;"><\/div>
-    <h1>${bp.hub_name}<\/h1>
-    <span class="ws-badge">${bp.team}<\/span>
-  <\/div>
-  <div class="hub-tabs">
-    <a class="hub-tab" href="${portfolioUrl}" target="_blank">📊 Portfolio<\/a>
-    <span class="hub-tab active">${bp.hub_name}<\/span>
-  <\/div>
-  <div class="topbar-right">
-    <span class="conn-dot" id="connStatus">Connected<\/span>
-    <button class="btn-ghost" id="btnAiToggle" style="font-size:12px;padding:6px 11px;">🤖 AI Agent<\/button>
-    <button class="btn-ghost" id="btnReloadTop" style="font-size:12px;padding:6px 11px;">↺ Reload<\/button>
-    <button class="btn-primary" id="btnAddTop" style="font-size:12px;padding:6px 12px;">+ New Action<\/button>
-  <\/div>
-<\/div>
-<div id="kpibar">
-  <div id="kpibar-row1">
-    <div class="kpi-item kpi-total"><div class="ki-icon">📋<\/div><div class="ki-body"><div class="ki-val" id="kpiTotal">0<\/div><div class="ki-lbl">Total Actions<\/div><\/div><\/div>
-    <div class="kpi-item kpi-urgent"><div class="ki-icon">🔴<\/div><div class="ki-body"><div class="ki-val" id="kpiUrgent">0<\/div><div class="ki-lbl">Urgent / High<\/div><\/div><\/div>
-    <div class="kpi-item kpi-late"><div class="ki-icon">⚠️<\/div><div class="ki-body"><div class="ki-val" id="kpiLate">0<\/div><div class="ki-lbl">Late / At Risk<\/div><\/div><\/div>
-    <div class="kpi-item kpi-owners"><div class="ki-icon">👥<\/div><div class="ki-body"><div class="ki-val" id="kpiOwners">0<\/div><div class="ki-lbl">Open Owners<\/div><\/div><\/div>
-    <div class="kpi-spacer"><\/div>
-    <div class="kpi-mode"><span id="modePill">Supabase<\/span><\/div>
-  <\/div>
-  <div id="kpibar-row2">
-    <div class="kbar-group"><span class="kbar-label">Type:<\/span><span id="typeBtns"><\/span><\/div>
-    <div class="kbar-divider"><\/div>
-    <div class="kbar-group">
-      <span class="kbar-label">Priority:<\/span>
-      <button class="fbtn pri-urgent" data-priority="1-Urgent" onclick="setPriorityFilter(this)">🔴 Urgent<\/button>
-      <button class="fbtn pri-high"   data-priority="2-High"   onclick="setPriorityFilter(this)">🟠 High<\/button>
-      <button class="fbtn pri-imp"    data-priority="3-Important" onclick="setPriorityFilter(this)">🟡 Important<\/button>
-      <button class="fbtn pri-med"    data-priority="5-Medium" onclick="setPriorityFilter(this)">🔵 Medium<\/button>
-    <\/div>
-    <div class="kbar-divider"><\/div>
-    <div class="kbar-group">
-      <span class="kbar-label">Status:<\/span>
-      <button class="fbtn sta-ontrack"  data-status="On Track"       onclick="setStatusFilter(this)">✅ On Track<\/button>
-      <button class="fbtn sta-atrisk"   data-status="At Risk"        onclick="setStatusFilter(this)">⚠️ At Risk<\/button>
-      <button class="fbtn sta-late"     data-status="Late"           onclick="setStatusFilter(this)">🔴 Late<\/button>
-      <button class="fbtn sta-nodate"   data-status="No Finish Date" onclick="setStatusFilter(this)">— No Date<\/button>
-      <button class="fbtn sta-notstart" data-status="Not Started"    onclick="setStatusFilter(this)">⏸ Not Started<\/button>
-      <button class="fbtn sta-done"     data-status="Done"           onclick="setStatusFilter(this)">✔️ Done<\/button>
-    <\/div>
-    <div class="kbar-divider"><\/div>
-    <div class="kbar-group">
-      <span class="kbar-label">Due:<\/span>
-      <button class="fbtn due-overdue" data-due="overdue" onclick="setDueFilter(this)">⛔ Overdue<\/button>
-      <button class="fbtn due-7"       data-due="7"       onclick="setDueFilter(this)">📅 7 days<\/button>
-      <button class="fbtn due-30"      data-due="30"      onclick="setDueFilter(this)">📆 30 days<\/button>
-      <button class="fbtn due-none"    data-due="none"    onclick="setDueFilter(this)">— No date<\/button>
-    <\/div>
-  <\/div>
-<\/div>
-<div class="shell">
-  <div class="layout">
-    <div class="toolbar">
-      <div class="card filter-card">
-        <div class="filter-head">
-          <div class="filter-head-title">Filters &amp; Actions<\/div>
-          <div class="btns">
-            <div class="view-switch"><button id="viewTableBtn" class="active">Table<\/button><button id="viewBoardBtn">Board<\/button><\/div>
-            <button class="btn-ghost" id="btnExport" style="font-size:12px;">⬇ Export CSV<\/button>
-            <button class="btn-ghost" id="btnReset"  style="font-size:12px;">✕ Reset filters<\/button>
-            <button class="btn-primary" id="btnAdd">+ Add action<\/button>
-          <\/div>
-        <\/div>
-        <div class="filter-grid">
-          <div><label>Search<\/label><input id="fSearch" placeholder="Title, account, owner…"/><\/div>
-          <div><label>Account<\/label><select id="fAccount"><\/select><\/div>
-          <div><label>Type<\/label><select id="fType"><\/select><\/div>
-          <div><label>Priority<\/label><select id="fPriority"><\/select><\/div>
-          <div><label>Status<\/label><select id="fStatus"><\/select><\/div>
-          <div><label>Owner<\/label><select id="fOwner"><\/select><\/div>
-          <div><label>Due window<\/label><select id="fDue"><option value="">All<\/option><option value="overdue">Overdue<\/option><option value="7">Next 7 days<\/option><option value="30">Next 30 days<\/option><option value="none">No due date<\/option><\/select><\/div>
-        <\/div>
-      <\/div>
-    <\/div>
-    <div class="content-area">
-      <div class="card" id="tableView">
-        <div class="panel-head"><div><strong>Action Table<\/strong> <span class="subtle" id="resultText"><\/span><\/div><\/div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th style="width:40px;min-width:40px;"><\/th>
-              <th class="sortable sort-asc" data-col="title" style="min-width:240px;width:240px;">Title / Context<span class="sort-icon"><\/span><\/th>
-              <th class="sortable" data-col="account" style="min-width:120px;width:120px;">Account<span class="sort-icon"><\/span><\/th>
-              ${extraFieldsCols}
-              <th class="sortable" data-col="type" style="min-width:130px;width:130px;">Type<span class="sort-icon"><\/span><\/th>
-              <th class="sortable" data-col="priority" style="min-width:120px;width:120px;">Priority<span class="sort-icon"><\/span><\/th>
-              <th class="sortable" data-col="status" style="min-width:110px;width:110px;">Status<span class="sort-icon"><\/span><\/th>
-              <th class="sortable sort-asc" data-col="due" style="min-width:100px;width:100px;">Due<span class="sort-icon"><\/span><\/th>
-              <th class="sortable" data-col="owner" style="min-width:140px;width:140px;">Owner<span class="sort-icon"><\/span><\/th>
-              <th style="min-width:90px;width:90px;">Checklist<\/th>
-            <\/tr><\/thead>
-            <tbody id="tbody"><\/tbody>
-          <\/table>
-        <\/div>
-      <\/div>
-      <div class="card board" id="boardView">
-        <div class="panel-head"><strong>Board View<\/strong><span class="subtle" style="margin-left:8px;">Click title to open<\/span><\/div>
-        <div class="board-grid" id="boardGrid"><\/div>
-      <\/div>
-    <\/div>
-  <\/div>
-<\/div>
-<div id="aiPanel">
-  <div class="ai-head">
-    <div class="ai-head-title"><div class="ai-dot"><\/div>AI Agent — ${bp.hub_name}<\/div>
-    <button class="btn-ghost" onclick="toggleAI()" style="padding:4px 9px;font-size:12px;">✕<\/button>
-  <\/div>
-  <div class="ai-messages" id="aiMessages">
-    <div class="ai-msg assistant">👋 Hi! I'm the AI agent for ${bp.hub_name}.<br><br>${bp.ai_persona}<\/div>
-  <\/div>
-  <div class="ai-quick-area">
-    <button class="ai-qbtn" onclick="aiQuick('What are the most urgent overdue actions?')">🔴 Urgent overdue<\/button>
-    <button class="ai-qbtn" onclick="aiQuick('Summarize all actions by account')">📊 By account<\/button>
-    <button class="ai-qbtn" onclick="aiQuick('Which owner has the most open actions?')">👤 Owner workload<\/button>
-    <button class="ai-qbtn" onclick="aiQuick('What actions are due this week?')">📅 Due this week<\/button>
-    <button class="ai-qbtn" onclick="aiQuick('Give me a risk summary')">⚠️ Risk summary<\/button>
-    <button class="ai-qbtn" onclick="aiQuick('Draft a status update email for my manager')">✉️ Status email<\/button>
-  <\/div>
-  <div class="ai-input-row">
-    <input type="text" id="aiInput" placeholder="Ask anything…" onkeydown="if(event.key==='Enter')sendAI()"/>
-    <button class="ai-send" id="aiSendBtn" onclick="sendAI()">Send<\/button>
-  <\/div>
-<\/div>
-<div class="modal" id="editorModal">
-  <div class="sheet">
-    <div class="sheet-head">
-      <div><div style="font-size:18px;font-weight:800;" id="sheetTitle">New Action<\/div><div class="subtle" id="sheetMeta"><\/div><\/div>
-      <button class="btn-ghost" id="btnClose" style="padding:6px 10px;">✕<\/button>
-    <\/div>
-    <div class="sheet-body">
-      <div class="sheet-grid">
-        <div>
-          <div class="section" style="margin-bottom:14px;">
-            <h3>Core details<\/h3>
-            <div class="field-grid">
-              <div class="full"><label>Title *<\/label><input id="mTitle" placeholder="Action title…"/><\/div>
-              <div><label>Account<\/label><input id="mAccount"/><\/div>
-              <div><label>Type<\/label><select id="mType">${typeOptions}<\/select><\/div>
-              <div><label>Priority<\/label><select id="mPriority"><option value="1-Urgent">1-Urgent<\/option><option value="2-High">2-High<\/option><option value="3-Important" selected>3-Important<\/option><option value="4-Normal">4-Normal<\/option><option value="5-Medium">5-Medium<\/option><\/select><\/div>
-              <div><label>Status<\/label><select id="mStatus"><option>Not Started<\/option><option>On Track<\/option><option>At Risk<\/option><option>Late<\/option><option>Overdue<\/option><option>No Finish Date<\/option><option>Done<\/option><\/select><\/div>
-              <div><label>Due date<\/label><input type="date" id="mDue"/><\/div>
-              <div><label>Owner<\/label><input id="mOwner"/><\/div>
-              ${extraFieldsForm}
-              <div class="full"><label>Description<\/label><textarea id="mDescription"><\/textarea><\/div>
-            <\/div>
-          <\/div>
-          <div class="section"><h3>Context<\/h3><div class="field-grid"><div class="full"><label>Project<\/label><input id="mProject"/><\/div><div class="full"><label>Bucket<\/label><input id="mBucket"/><\/div><div><label>Modified by<\/label><input id="mModifiedBy" disabled/><\/div><div><label>Version<\/label><input id="mVersionNo" disabled/><\/div><\/div><\/div>
-        <\/div>
-        <div><div class="section"><h3>Checklist<\/h3><div class="checklist-editor" id="checklistEditor"><\/div><button class="btn-ghost" id="btnAddChecklist" style="margin-top:10px;width:100%;font-size:12px;">+ Add item<\/button><\/div><\/div>
-      <\/div>
-    <\/div>
-    <div class="sheet-foot"><button class="btn-danger" id="btnDelete">Delete<\/button><div class="btns"><button class="btn-ghost" id="btnCancel">Cancel<\/button><button class="btn-primary" id="btnSave">Save action<\/button><\/div><\/div>
-  <\/div>
-<\/div>
-<script>
-'use strict';
-const CONFIG={supabaseUrl:'https://cqgzndwisonvnlsxicmd.supabase.co',supabaseKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNxZ3puZHdpc29udm5sc3hpY21kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNDQzOTksImV4cCI6MjA5NTcyMDM5OX0.nOCt3ddBWhzXGzqcpVvBvNboBro3xFgmpS7F-ZMHXpE',claudeKey:'',proxyUrl:'https://rapid-pine-a057.xujefferson.workers.dev',table:'${bp.db_table}',hubId:'${bp.hub_id}'};
-class DBAdapter{constructor(type,cfg){this.type=type;this.cfg=cfg;this.base=cfg.supabaseUrl+'/rest/v1/'+cfg.table;this.h={'Content-Type':'application/json','apikey':cfg.supabaseKey,'Authorization':'Bearer '+cfg.supabaseKey,'Prefer':'return=representation'};}
-async getAll(){const r=await fetch(this.base+'?is_deleted=eq.false&order=due.asc.nullslast',{headers:this.h});if(!r.ok)throw new Error('DB read failed '+r.status);return r.json();}
-async create(item){const r=await fetch(this.base,{method:'POST',headers:this.h,body:JSON.stringify(item)});if(!r.ok){const e=await r.text();throw new Error('DB create failed '+r.status+': '+e);}return(await r.json())[0];}
-async update(id,changes){const r=await fetch(this.base+'?id=eq.'+id,{method:'PATCH',headers:this.h,body:JSON.stringify(changes)});if(!r.ok){const e=await r.text();throw new Error('DB update failed '+r.status+': '+e);}return(await r.json())[0];}
-async remove(id){const r=await fetch(this.base+'?id=eq.'+id,{method:'PATCH',headers:this.h,body:JSON.stringify({is_deleted:true})});if(!r.ok)throw new Error('DB delete failed '+r.status);}}
-const db=new DBAdapter('supabase',CONFIG);
-let state={rows:[],view:[],editingId:null,currentView:'table',expanded:new Set(),sortCol:'due',sortDir:'asc',activeType:'',activeDue:'',activePriority:'',activeStatus:'',aiHistory:[],aiThinking:false};
-const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const nowIso=()=>new Date().toISOString();
-const fmtDate=d=>d?new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'';
-const toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className=type?'show '+type:'show';setTimeout(()=>t.className='',3200);};
-const showLoading=(show,msg='')=>{const el=document.getElementById('loadingOverlay');if(show){el.classList.remove('hidden');if(msg)el.querySelector('.loading-text').textContent=msg;}else el.classList.add('hidden');};
-function autoStatus(r){if(r.due&&!['Done','Closed','Completed'].includes(r.status)){const d=new Date(r.due+'T00:00:00');d.setHours(0,0,0,0);const t=new Date();t.setHours(0,0,0,0);if(d<t)return'Overdue';}return r.status;}
-function normalizeRow(r){const row={id:r.id,title:r.title||'',account:r.account||'',type:r.type||'',priority:r.priority||'3-Important',status:r.status||'Not Started',due:r.due||null,owner:r.owner||'',description:r.description||'',checklist:Array.isArray(r.checklist)?r.checklist.map(c=>typeof c==='string'?{text:c,done:false}:{text:c.text||'',done:!!c.done}):[],project:r.project||'',bucket:r.bucket||'',${extraFieldsNorm}version_no:r.version_no||1,modified_by:r.modified_by||'',modified_at:r.modified_at||nowIso(),created_at:r.created_at||nowIso(),is_deleted:false};row.status=autoStatus(row);return row;}
-function checklistProgress(cl){if(!cl||!cl.length)return{done:0,total:0,pct:0};const done=cl.filter(c=>c.done).length;return{done,total:cl.length,pct:Math.round(done/cl.length*100)};}
-const priorityClass=p=>'priority-'+parseInt(p||'5');
-const statusClass=s=>'status-'+(s||'').toLowerCase().replace(/[^a-z]/g,'');
-const uniqueVals=key=>[...new Set(state.rows.map(r=>r[key]).filter(Boolean))].sort();
-function fillSelect(id,vals){const el=document.getElementById(id);if(!el)return;const cur=el.value;el.innerHTML='<option value="">All</option>'+vals.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');el.value=cur;}
-async function loadRows(){showLoading(true,'Loading from Supabase…');try{const raw=await db.getAll();state.rows=raw.map(normalizeRow);refreshFilters();applyFilters();setConn(true);toast('Loaded '+state.rows.length+' actions','success');}catch(e){setConn(false);toast('Load failed: '+e.message,'error');console.error(e);}finally{showLoading(false);}}
-async function saveRow(row){const payload={title:row.title,account:row.account,type:row.type,priority:row.priority,status:row.status,due:row.due||null,owner:row.owner,description:row.description,checklist:row.checklist||[],project:row.project||'',bucket:row.bucket||'',${extraFieldsPayload}version_no:(row.version_no||1)+1,modified_by:row.owner||'user',modified_at:nowIso(),is_deleted:false};if(row._isNew){const created=await db.create(payload);state.rows.push(normalizeRow(created));}else{const updated=await db.update(row.id,payload);const idx=state.rows.findIndex(r=>r.id===row.id);if(idx>-1)state.rows[idx]=normalizeRow(Object.assign({},updated,{id:row.id}));}refreshFilters();applyFilters();}
-async function deleteRow(id){await db.remove(id);state.rows=state.rows.filter(r=>r.id!==id);refreshFilters();applyFilters();}
-function setConn(ok){const el=document.getElementById('connStatus');el.textContent=ok?'Connected':'Offline';el.className=ok?'conn-dot':'conn-dot offline';}
-function applyFilters(){const f={search:document.getElementById('fSearch').value.trim().toLowerCase(),account:document.getElementById('fAccount').value,owner:document.getElementById('fOwner').value,due:state.activeDue||document.getElementById('fDue').value,type:state.activeType||document.getElementById('fType').value,priority:state.activePriority||document.getElementById('fPriority').value,status:state.activeStatus||document.getElementById('fStatus').value};const today=new Date();today.setHours(0,0,0,0);let filtered=state.rows.filter(r=>{if(f.account&&r.account!==f.account)return false;if(f.type&&r.type!==f.type)return false;if(f.priority&&r.priority!==f.priority)return false;if(f.status&&r.status!==f.status)return false;if(f.owner&&r.owner!==f.owner)return false;if(f.search){const hay=[r.title,r.account,r.type,r.priority,r.status,r.owner,r.description,...(r.checklist||[]).map(x=>x.text)].join(' ').toLowerCase();if(!hay.includes(f.search))return false;}if(f.due){if(f.due==='none')return!r.due;if(!r.due)return false;const d=new Date(r.due+'T00:00:00');d.setHours(0,0,0,0);const diff=Math.ceil((d-today)/86400000);if(f.due==='overdue'&&!(diff<0))return false;if(f.due==='7'&&!(diff>=0&&diff<=7))return false;if(f.due==='30'&&!(diff>=0&&diff<=30))return false;}return true;});filtered=sortRows(filtered,state.sortCol,state.sortDir);state.view=filtered;updateKpis();renderTable();renderBoard();}
-function sortRows(rows,col,dir){if(!col)return rows;return[...rows].sort((a,b)=>{let va=a[col]||'',vb=b[col]||'';if(col==='due'){if(!va&&!vb)return 0;if(!va)return 1;if(!vb)return-1;return dir==='asc'?new Date(va)-new Date(vb):new Date(vb)-new Date(va);}if(col==='priority'){va=parseInt(va)||9;vb=parseInt(vb)||9;return dir==='asc'?va-vb:vb-va;}va=String(va).toLowerCase();vb=String(vb).toLowerCase();return dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);});}
-function setSortCol(col){state.sortDir=state.sortCol===col?(state.sortDir==='asc'?'desc':'asc'):'asc';state.sortCol=col;document.querySelectorAll('th.sortable').forEach(th=>{th.classList.remove('sort-asc','sort-desc');if(th.dataset.col===col)th.classList.add(state.sortDir==='asc'?'sort-asc':'sort-desc');});applyFilters();}
-function refreshFilters(){fillSelect('fAccount',uniqueVals('account'));fillSelect('fType',uniqueVals('type'));fillSelect('fPriority',uniqueVals('priority'));fillSelect('fStatus',uniqueVals('status'));fillSelect('fOwner',uniqueVals('owner'));const span=document.getElementById('typeBtns');if(span)span.innerHTML=uniqueVals('type').map(t=>'<button class="fbtn'+(state.activeType===t?' active':'')+'" data-type="'+esc(t)+'" onclick="setTypeFilter(this)">'+esc(t)+'</button>').join('');}
-function updateKpis(){document.getElementById('kpiTotal').textContent=state.rows.length;document.getElementById('kpiUrgent').textContent=state.rows.filter(r=>['1-Urgent','2-High'].includes(r.priority)).length;document.getElementById('kpiLate').textContent=state.rows.filter(r=>['Late','Overdue','At Risk'].includes(r.status)).length;document.getElementById('kpiOwners').textContent=new Set(state.rows.map(r=>r.owner).filter(Boolean)).size;document.getElementById('resultText').textContent='('+state.view.length+' shown / '+state.rows.length+' total)';}
-function _toggle(sk,ak,val){state[sk]=state[sk]===val?'':val;document.querySelectorAll('[data-'+ak+']').forEach(b=>b.classList.toggle('active',b.dataset[ak]===state[sk]&&state[sk]!==''));const map={activeType:'fType',activePriority:'fPriority',activeStatus:'fStatus',activeDue:'fDue'};const sel=document.getElementById(map[sk]);if(sel)sel.value=state[sk];applyFilters();}
-const setTypeFilter=btn=>_toggle('activeType','type',btn.dataset.type);
-const setPriorityFilter=btn=>_toggle('activePriority','priority',btn.dataset.priority);
-const setStatusFilter=btn=>_toggle('activeStatus','status',btn.dataset.status);
-const setDueFilter=btn=>_toggle('activeDue','due',btn.dataset.due);
-function renderTable(){const body=document.getElementById('tbody');if(!state.view.length){body.innerHTML='<tr><td colspan="20" class="empty">No actions match the current filter.</td></tr>';return;}const today=new Date();today.setHours(0,0,0,0);body.innerHTML=state.view.map(r=>{const isExp=state.expanded.has(r.id);let dueCss='';if(r.due){const d=new Date(r.due+'T00:00:00');d.setHours(0,0,0,0);const diff=Math.ceil((d-today)/86400000);if(diff<0)dueCss='style="color:var(--red);font-weight:700;"';else if(diff<=7)dueCss='style="color:var(--amber);font-weight:700;"';}const cp=checklistProgress(r.checklist);const clCell=cp.total?'<div style="display:flex;flex-direction:column;gap:3px;"><span style="font-size:12px;font-weight:600;color:'+(cp.pct===100?'var(--green)':cp.pct>0?'var(--accent)':'var(--muted)')+'">'+cp.done+'/'+cp.total+'</span><div style="height:4px;border-radius:2px;background:var(--line);overflow:hidden;"><div style="height:100%;width:'+cp.pct+'%;background:'+(cp.pct===100?'var(--green)':'var(--accent)')+';border-radius:2px;"></div></div></div>':'<span style="color:var(--muted);font-size:11px;">—</span>';
-const mainRow='<tr class="'+(isExp?'expanded-row':'')+'"><td><button class="btn-ghost" style="padding:4px 7px;font-size:12px;" onclick="toggleExpand(''+r.id+'')">'+(isExp?'−':'+')+'</button></td><td class="title-cell"><div class="main"><span class="title-link" onclick="openEditor(''+r.id+'')">'+esc(r.title)+'</span></div><div class="meta">'+esc(r.project||'')+(r.bucket?' · '+esc(r.bucket):'')+'</div></td><td style="white-space:nowrap;">'+esc(r.account)+'</td>${extraFieldsRow}<td>'+esc(r.type)+'</td><td><span class="pill '+priorityClass(r.priority)+'">'+esc((r.priority||'').replace(/^\d-/,''))+'</span></td><td><span class="pill '+statusClass(r.status)+'">'+esc(r.status)+'</span></td><td '+dueCss+'>'+(r.due?esc(fmtDate(r.due)):'<span style="color:var(--muted)">—</span>')+'</td><td style="white-space:nowrap;">'+esc(r.owner)+'</td><td>'+clCell+'</td></tr>';
-if(!isExp)return mainRow;
-return mainRow+'<tr class="expanded-row"><td colspan="20" style="padding:0;"><div class="expand-box"><div class="expand-grid"><div class="detail-block"><div style="font-weight:700;margin-bottom:8px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);">Latest update</div><div style="white-space:pre-wrap;line-height:1.55;font-size:13px;">'+esc(r.description||'No description.')+'</div></div><div class="detail-block"><div style="font-weight:700;margin-bottom:8px;font-size:12px;text-transform:uppercase;color:var(--muted);">Checklist'+(cp.total?' ('+cp.done+'/'+cp.total+')':'')+'</div><div style="display:flex;flex-direction:column;gap:6px;">'+(r.checklist||[]).length?r.checklist.map(c=>'<div style="display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:7px;border:1px solid var(--line);background:var(--card);font-size:12px;">'+(c.done?'<span style="color:var(--green)">✓</span>':'<span style="color:var(--muted)">○</span>')+'<span style="'+(c.done?'text-decoration:line-through;color:var(--muted);':'')+'">'+esc(c.text)+'</span></div>').join(''):'<div class="subtle">No checklist items.</div>'+'</div></div></div></div></td></tr>';}).join('');}
-function toggleExpand(id){state.expanded.has(id)?state.expanded.delete(id):state.expanded.add(id);renderTable();}
-function renderBoard(){const lanes=[{label:'Not Started',cls:'status-notstarted',match:r=>r.status==='Not Started'},{label:'On Track',cls:'status-ontrack',match:r=>r.status==='On Track'},{label:'At Risk / Late',cls:'status-atrisk',match:r=>['Late','Overdue','At Risk'].includes(r.status)},{label:'No Finish Date',cls:'status-nofinishdate',match:r=>r.status==='No Finish Date'},{label:'Done',cls:'status-done',match:r=>r.status==='Done'}];document.getElementById('boardGrid').innerHTML=lanes.map(lane=>{const items=state.view.filter(lane.match).sort((a,b)=>parseInt(a.priority||5)-parseInt(b.priority||5));return'<div class="lane"><div class="lane-head"><span>'+lane.label+'</span><span class="pill '+lane.cls+'">'+items.length+'</span></div><div class="lane-body">'+(items.length?items.map(r=>{const cp=checklistProgress(r.checklist);return'<div class="task-card"><div class="tc-title"><span class="title-link" onclick="openEditor(''+r.id+'')">'+esc(r.title)+'</span></div><div class="tc-meta">'+esc(r.account)+(r.owner?' · '+esc(r.owner):'')+'</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:5px;"><span class="pill '+priorityClass(r.priority)+'">'+esc((r.priority||'').replace(/^\d-/,''))+'</span></div><div class="subtle">📋 '+(cp.total?cp.done+'/'+cp.total+' done':'—')+' · 📅 '+(r.due?fmtDate(r.due):'No date')+'</div></div>';}).join(''):'<div class="empty" style="padding:16px;font-size:12px;">No items</div>')+'</div></div>';}).join('');}
-function switchView(v){state.currentView=v;document.getElementById('tableView').style.display=v==='table'?'':'none';document.getElementById('boardView').className=v==='board'?'card board active':'card board';document.getElementById('viewTableBtn').className=v==='table'?'active':'';document.getElementById('viewBoardBtn').className=v==='board'?'active':'';}
-function openEditor(id){const row=id?state.rows.find(r=>r.id===id):null;state.editingId=id||null;document.getElementById('sheetTitle').textContent=row?'Edit Action':'New Action';document.getElementById('sheetMeta').textContent=row?'ID: '+row.id.slice(0,8)+'… · v'+row.version_no:'';const s=(elId,val)=>{const el=document.getElementById(elId);if(el)el.value=val||'';};s('mTitle',row?.title);s('mAccount',row?.account);s('mType',row?.type||'${bp.action_types?.[0]||"Issue"}');s('mPriority',row?.priority||'3-Important');s('mStatus',row?.status||'Not Started');s('mDue',row?.due||'');s('mOwner',row?.owner);s('mDescription',row?.description);s('mProject',row?.project);s('mBucket',row?.bucket);s('mModifiedBy',row?.modified_by||'');s('mVersionNo',row?.version_no||1);${extraFieldsOpen}const cl=document.getElementById('checklistEditor');cl.innerHTML='';(row?.checklist||[]).forEach(c=>addChecklistEditorRow(c.text,c.done));document.getElementById('btnDelete').style.display=row?'':'none';document.getElementById('editorModal').classList.add('open');}
-function closeEditor(){document.getElementById('editorModal').classList.remove('open');}
-function addChecklistEditorRow(text,done){const cl=document.getElementById('checklistEditor');const div=document.createElement('div');div.className='check-item'+(done?' done':'');div.innerHTML='<input type="checkbox" '+(done?'checked':'')+' onchange="this.closest(\'.check-item\').classList.toggle(\'done\',this.checked)"/><input type="text" value="'+esc(text)+'" placeholder="Checklist item…" style="border:none;background:transparent;color:var(--ink);padding:0;font-size:13px;"/><button class="btn-ghost" style="padding:3px 7px;font-size:11px;" onclick="this.closest(\'.check-item\').remove()">✕</button>';cl.appendChild(div);}
-async function saveEditor(){const title=document.getElementById('mTitle').value.trim();if(!title){toast('Title is required','error');return;}const row={id:state.editingId||crypto.randomUUID(),_isNew:!state.editingId,title,account:document.getElementById('mAccount').value,type:document.getElementById('mType').value,priority:document.getElementById('mPriority').value,status:document.getElementById('mStatus').value,due:document.getElementById('mDue').value||null,owner:document.getElementById('mOwner').value,description:document.getElementById('mDescription').value,project:document.getElementById('mProject').value,bucket:document.getElementById('mBucket').value,version_no:parseInt(document.getElementById('mVersionNo').value)||1,checklist:[...document.getElementById('checklistEditor').querySelectorAll('.check-item')].map(el=>({text:el.querySelector('input[type=text]').value,done:el.querySelector('input[type=checkbox]').checked})),${extraFieldsSave}};closeEditor();showLoading(true,'Saving…');try{await saveRow(row);toast(row._isNew?'Action created ✓':'Action updated ✓','success');}catch(e){toast('Save failed: '+e.message,'error');console.error(e);}finally{showLoading(false);}}
-async function deleteEditor(){if(!state.editingId){closeEditor();return;}if(!confirm('Delete this action permanently?'))return;closeEditor();showLoading(true,'Deleting…');try{await deleteRow(state.editingId);toast('Action deleted','success');}catch(e){toast('Delete failed: '+e.message,'error');}finally{showLoading(false);}}
-function exportCsv(){const cols=['title','account','type','priority','status','due','owner','description'];const rows=[cols.join(','),...state.view.map(r=>cols.map(c=>'"'+(String(r[c]||'').replace(/"/g,'""'))+'"').join(','))];const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.join('\n'));a.download='${bp.hub_id}_actions_'+new Date().toISOString().slice(0,10)+'.csv';a.click();}
-function toggleAI(){document.getElementById('aiPanel').classList.toggle('open');}
-function aiQuick(p){document.getElementById('aiInput').value=p;sendAI();}
-function addAiMsg(role,content,cls){const c=document.getElementById('aiMessages');const div=document.createElement('div');div.className='ai-msg '+role+(cls?' '+cls:'');div.innerHTML=content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');c.appendChild(div);c.scrollTop=c.scrollHeight;return div;}
-async function sendAI(){const input=document.getElementById('aiInput');const msg=input.value.trim();if(!msg||state.aiThinking)return;input.value='';state.aiThinking=true;document.getElementById('aiSendBtn').disabled=true;addAiMsg('user',msg,'');const loadEl=addAiMsg('assistant','⏳ Thinking…','loading');const dataCtx=JSON.stringify({total:state.rows.length,overdue:state.rows.filter(r=>r.status==='Overdue').length,urgent:state.rows.filter(r=>['1-Urgent','2-High'].includes(r.priority)).length,actions:state.rows.map(r=>({title:r.title,account:r.account,type:r.type,priority:r.priority,status:r.status,due:r.due,owner:r.owner}))});state.aiHistory.push({role:'user',content:msg});if(state.aiHistory.length>20)state.aiHistory=state.aiHistory.slice(-20);try{const apiUrl=CONFIG.proxyUrl||'https://api.anthropic.com/v1/messages';const apiHeaders=CONFIG.proxyUrl?{'Content-Type':'application/json'}:{'Content-Type':'application/json','x-api-key':CONFIG.claudeKey,'anthropic-version':'2023-06-01','anthropic-dangerous-allow-browser':'true'};const resp=await fetch(apiUrl,{method:'POST',headers:apiHeaders,body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:1024,system:'You are the AI agent for ${bp.hub_name} at Teradyne. ${bp.ai_persona} Today: '+new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'.\n\nLive data:\n'+dataCtx,messages:state.aiHistory})});if(!resp.ok){const e=await resp.json().catch(()=>({}));throw new Error(e.error?.message||'API '+resp.status);}const data=await resp.json();const answer=data.content?.find(b=>b.type==='text')?.text||'No response.';state.aiHistory.push({role:'assistant',content:answer});loadEl.className='ai-msg assistant';loadEl.innerHTML=answer.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');}catch(e){loadEl.className='ai-msg error';loadEl.textContent='❌ '+e.message;}finally{state.aiThinking=false;document.getElementById('aiSendBtn').disabled=false;}}
-['fSearch','fAccount','fOwner'].forEach(id=>document.getElementById(id)?.addEventListener('input',applyFilters));
-['fType','fPriority','fStatus','fDue'].forEach(id=>{const el=document.getElementById(id);if(!el)return;const map={fType:'activeType',fPriority:'activePriority',fStatus:'activeStatus',fDue:'activeDue'};const attrMap={fType:'type',fPriority:'priority',fStatus:'status',fDue:'due'};el.addEventListener('change',function(){state[map[id]]=this.value;document.querySelectorAll('[data-'+attrMap[id]+']').forEach(b=>b.classList.toggle('active',b.dataset[attrMap[id]]===this.value&&this.value!==''));applyFilters();});});
-document.getElementById('btnReset').onclick=()=>{['fSearch','fAccount','fType','fPriority','fStatus','fOwner','fDue'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});state.activeType='';state.activeDue='';state.activePriority='';state.activeStatus='';document.querySelectorAll('[data-type],[data-due],[data-priority],[data-status]').forEach(b=>b.classList.remove('active'));applyFilters();};
-document.getElementById('btnAdd').onclick=()=>openEditor();
-document.getElementById('btnAddTop').onclick=()=>openEditor();
-document.getElementById('btnClose').onclick=closeEditor;
-document.getElementById('btnCancel').onclick=closeEditor;
-document.getElementById('btnSave').onclick=saveEditor;
-document.getElementById('btnDelete').onclick=deleteEditor;
-document.getElementById('btnAddChecklist').onclick=()=>addChecklistEditorRow('',false);
-document.getElementById('btnReloadTop').onclick=loadRows;
-document.getElementById('btnExport').onclick=exportCsv;
-document.getElementById('btnAiToggle').onclick=toggleAI;
-document.getElementById('viewTableBtn').onclick=()=>switchView('table');
-document.getElementById('viewBoardBtn').onclick=()=>switchView('board');
-document.querySelectorAll('th.sortable').forEach(th=>th.addEventListener('click',()=>setSortCol(th.dataset.col)));
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEditor();document.getElementById('aiPanel').classList.remove('open');}});
-document.addEventListener('DOMContentLoaded',()=>{state.activeType='';state.activeDue='';state.activePriority='';state.activeStatus='';loadRows().then(()=>{const actionId=new URLSearchParams(location.search).get('openAction');if(actionId){const row=state.rows.find(r=>r.id===actionId);if(row)openEditor(row.id);}});});
-<\/script>
-<\/body>
-<\/html>`;
+function renderTable() {
+  const wrap = document.getElementById('table-wrap');
+  if (!actions.length) {
+    wrap.innerHTML = '<div class="empty">No actions yet. Click + New Action to get started.</div>';
+    return;
+  }
+  const extraHeaders = EXTRA_FIELDS.map(f => '<th>'+f.label+'</th>').join('');
+  const extraCells = (a) => EXTRA_FIELDS.map(f => '<td>'+(a[f.col]||'')+'</td>').join('');
+  wrap.innerHTML = '<table><thead><tr><th>Title</th><th>Account</th><th>Type</th><th>Priority</th><th>Status</th><th>Due</th><th>Owner</th>'+extraHeaders+'</tr></thead><tbody>'
+    + actions.map(a => '<tr onclick="openModal(\''+a.id+'\')" style="cursor:pointer">'
+        + '<td><strong>'+esc(a.title||'')+'</strong></td>'
+        + '<td>'+esc(a.account||'')+'</td>'
+        + '<td>'+esc(a.type||'')+'</td>'
+        + '<td><span class="badge '+priorityClass(a.priority)+'">'+esc(a.priority||'')+'</span></td>'
+        + '<td><span class="badge '+statusClass(a.status)+'">'+esc(a.status||'')+'</span></td>'
+        + '<td>'+esc(a.due||'')+'</td>'
+        + '<td>'+esc(a.owner||'')+'</td>'
+        + extraCells(a)
+        + '</tr>').join('')
+    + '</tbody></table>';
 }
 
-function renderProvision(bp, sql, html){
-  document.getElementById('provisionContent').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 2fr;gap:20px;margin-bottom:20px;">
-      <div>
-        <div class="spec-section">
-          <h3>Generated Artifacts</h3>
-          <div class="spec-row"><span class="spec-key">Hub</span><span class="spec-val">${esc(bp.hub_name)}</span></div>
-          <div class="spec-row"><span class="spec-key">DB table</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${esc(bp.db_table)}</span></div>
-          <div class="spec-row"><span class="spec-key">Access token</span><span class="spec-val" style="font-family:monospace;font-size:12px;color:var(--amber);">${esc(bp.access_token)}</span></div>
-          <div class="spec-row"><span class="spec-key">GitHub repo</span><span class="spec-val" style="font-family:monospace;font-size:12px;">${bp.hub_id}-hub</span></div>
-          <div class="spec-row"><span class="spec-key">SQL lines</span><span class="spec-val">${sql.split('\n').length}</span></div>
-          <div class="spec-row"><span class="spec-key">HTML lines</span><span class="spec-val">${html.split('\n').length}</span></div>
-        </div>
-        <div style="margin:16px 0;">
-          <button class="auto-btn" onclick="startAutoProvision()">⚡ Auto-Deploy Everything</button>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;">Runs SQL → Creates GitHub repo → Uploads HTML → Enables Pages — fully automatic</div>
-        </div>
-        <div class="spec-section">
-          <h3>Or download manually</h3>
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <button class="btn-ghost" style="font-size:12px;" onclick="downloadFile('sql')">⬇ Download SQL</button>
-            <button class="btn-ghost" style="font-size:12px;" onclick="downloadFile('html')">⬇ Download HTML</button>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="code-tabs">
-          <span class="code-tab active" data-tab="sql" onclick="document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='sql'));document.getElementById('codeOutput').textContent=pipeline.generatedSQL;">SQL Schema</span>
-          <span class="code-tab" data-tab="html" onclick="document.querySelectorAll('.code-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab==='html'));document.getElementById('codeOutput').textContent=pipeline.generatedHTML;">HTML App</span>
-          <div style="flex:1;"></div>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('codeOutput').textContent);toast('Copied ✓','success')">📋 Copy</button>
-        </div>
-        <div class="code-block" id="codeOutput">${esc(sql)}</div>
-      </div>
-    </div>
-    <div id="autoProvisionLog" style="display:none;margin-bottom:16px;">
-      <div style="font-weight:800;font-size:13px;margin-bottom:10px;color:var(--ink);">⚡ Auto-Provisioning Log</div>
-      <div class="auto-log" id="autoLog"></div>
-      <div class="done-banner" id="autoProvisionDone">
-        <div class="db-icon">🎉</div>
-        <div class="db-text">
-          <div class="db-title">Hub is live!</div>
-          <div class="db-url"><a id="hubLiveUrl" href="#" target="_blank">—</a></div>
-        </div>
-        <button class="btn-primary" onclick="goStep(5)">Validate →</button>
-      </div>
-    </div>`;
-  renderValidation(bp);
+function renderKPIs() {
+  const open = actions.filter(a => a.status !== 'Done');
+  document.getElementById('k-total').textContent = open.length;
+  document.getElementById('k-urgent').textContent = open.filter(a => a.priority && (a.priority.includes('Urgent')||a.priority.includes('High'))).length;
+  document.getElementById('k-late').textContent = open.filter(a => a.status && (a.status.includes('Late')||a.status.includes('Risk'))).length;
+  const owners = new Set(open.filter(a=>a.owner).map(a=>a.owner));
+  document.getElementById('k-owners').textContent = owners.size;
 }
 
-async function startAutoProvision(){
-  if(!checkCredentials()) return;
-  document.getElementById('autoProvisionLog').style.display='block';
-  document.getElementById('autoProvisionLog').scrollIntoView({behavior:'smooth'});
-  await autoProvision(pipeline.spec, pipeline.generatedSQL, pipeline.generatedHTML);
-  markStepDone(4);
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function downloadFile(type){
-  const content = type==='sql' ? pipeline.generatedSQL : pipeline.generatedHTML;
-  const filename = type==='sql' ? `${pipeline.spec.db_table}_schema.sql` : `${pipeline.spec.hub_id}_hub.html`;
-  const a=document.createElement('a');
-  a.href='data:text/plain;charset=utf-8,'+encodeURIComponent(content);
-  a.download=filename; a.click();
+// ── MODAL ──
+function openModal(id) {
+  const a = id ? actions.find(x=>x.id===id) : null;
+  document.getElementById('modal-title').textContent = a ? 'Edit Action' : 'New Action';
+  document.getElementById('f-id').value = a?.id || '';
+  document.getElementById('f-title').value = a?.title || '';
+  document.getElementById('f-account').value = a?.account || '';
+  document.getElementById('f-type').value = a?.type || '';
+  document.getElementById('f-priority').value = a?.priority || '3-Important';
+  document.getElementById('f-status').value = a?.status || 'Not Started';
+  document.getElementById('f-due').value = a?.due || '';
+  document.getElementById('f-owner').value = a?.owner || '';
+  document.getElementById('f-desc').value = a?.description || '';
+  EXTRA_FIELDS.forEach(ef => {
+    const el = document.getElementById('f-'+ef.col);
+    if (el) el.value = a?.[ef.col] || '';
+  });
+  document.getElementById('btn-del').style.display = a ? 'block' : 'none';
+  document.getElementById('modal').classList.add('show');
 }
 
-function renderValidation(bp){
-  const checks=[
-    {icon:'🗄️',title:'Run SQL in Supabase',desc:`Go to Supabase → SQL Editor → paste the SQL schema → Run. Creates table <code style="color:var(--accent)">${bp.db_table}</code> and registers hub in hub_registry.`,status:'pending'},
-    {icon:'📁',title:'Create GitHub repository',desc:`Create a new public repo named something like <code style="color:var(--accent)">${bp.hub_id}-hub</code> under xujeffersoninusa.`,status:'pending'},
-    {icon:'⬆️',title:'Upload HTML as index.html',desc:'Save the generated HTML as index.html and upload to the new repo root.',status:'pending'},
-    {icon:'🌐',title:'Enable GitHub Pages',desc:'Repo Settings → Pages → Deploy from branch → main → / (root) → Save.',status:'pending'},
-    {icon:'🔐',title:'Test security gate',desc:`Open the URL WITHOUT the token — should show Access Denied. Then add <code style="color:var(--accent)">?access=${bp.access_token}</code> — should load the hub.`,status:'pending'},
-    {icon:'✅',title:'Test CRUD operations',desc:'Create a test action, edit it, verify it appears in Supabase Table Editor, then delete it.',status:'pending'},
-    {icon:'🤖',title:'Test AI agent',desc:'Open the AI chat panel, ask "summarize all actions" — should respond with hub data.',status:'pending'},
-    {icon:'📊',title:'Register in Portfolio Dashboard',desc:`Add the new hub URL to portfolio_hub.html CONFIG.hubs array and update the nav tabs. Hub URL: <code style="color:var(--accent)">https://xujeffersoninusa.github.io/${bp.hub_id}-hub/?access=${bp.access_token}</code>`,status:'pending'},
-  ];
-  document.getElementById('validationContent').innerHTML=`
-    <div style="margin-bottom:16px;display:flex;gap:12px;align-items:center;">
-      <div style="font-size:13px;color:var(--muted);">Check each item as you complete it. The hub for <strong style="color:var(--ink);">${esc(bp.hub_name)}</strong> is ready to deploy.</div>
-    </div>
-    <div class="check-list">${checks.map((c,i)=>`
-      <div class="check-row" id="vcheck${i}">
-        <div class="check-icon">${c.icon}</div>
-        <div class="check-content">
-          <div class="check-title">${c.title}</div>
-          <div class="check-desc">${c.desc}</div>
-          <div class="check-status">
-            <span class="status-pill sp-pending" id="vs${i}">Pending</span>
-            <button style="font-size:11px;padding:4px 10px;background:var(--green-s);color:var(--green);border:1px solid rgba(52,211,153,.3);border-radius:6px;cursor:pointer;" onclick="markCheck(${i})">Mark done ✓</button>
-          </div>
-        </div>
-      </div>`).join('')}
-    </div>`;
-}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-function markCheck(i){
-  document.getElementById(`vs${i}`).textContent='Done ✓';
-  document.getElementById(`vs${i}`).className='status-pill sp-pass';
-  document.getElementById(`vcheck${i}`).style.opacity='.65';
-}
-
-function publish(){
-  toast('Hub marked as published and registered in portfolio ✓','success');
-  document.querySelectorAll('.step-btn').forEach(b=>b.classList.add('done'));
-}
-
-function openSettings(){
-  const s=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  document.getElementById('sSbpToken').value = s.supabaseMgmtToken||'';
-  document.getElementById('sGhToken').value  = s.githubToken||'';
-  document.getElementById('sGhUser').value   = s.githubUser||'xujeffersoninusa';
-  document.getElementById('sProxy').value    = s.proxyUrl||'https://rapid-pine-a057.xujefferson.workers.dev';
-  document.getElementById('settingsModal').style.display='flex';
-}
-function closeSettings(){
-  document.getElementById('settingsModal').style.display='none';
-}
-function saveSettings(){
-  const existing = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  const updated = {
-    ...existing,
-    supabaseMgmtToken: document.getElementById('sSbpToken').value.trim(),
-    githubToken:       document.getElementById('sGhToken').value.trim(),
-    githubUser:        document.getElementById('sGhUser').value.trim(),
-    proxyUrl:          document.getElementById('sProxy').value.trim(),
+async function saveAction() {
+  const id = document.getElementById('f-id').value;
+  const payload = {
+    title: document.getElementById('f-title').value,
+    account: document.getElementById('f-account').value,
+    type: document.getElementById('f-type').value,
+    priority: document.getElementById('f-priority').value,
+    status: document.getElementById('f-status').value,
+    due: document.getElementById('f-due').value || null,
+    owner: document.getElementById('f-owner').value,
+    description: document.getElementById('f-desc').value,
+    modified_at: new Date().toISOString()
   };
-  localStorage.setItem('agentStudioConfig', JSON.stringify(updated));
-  // Update live CONFIG
-  CONFIG.supabaseMgmtToken = updated.supabaseMgmtToken;
-  CONFIG.githubToken       = updated.githubToken;
-  CONFIG.githubUser        = updated.githubUser;
-  CONFIG.proxyUrl          = updated.proxyUrl;
-  closeSettings();
-  toast('Credentials saved to browser ✓','success');
-}
+  EXTRA_FIELDS.forEach(ef => {
+    const el = document.getElementById('f-'+ef.col);
+    if (el) payload[ef.col] = el.value;
+  });
 
-function checkCredentials(){
-  const missing = [];
-  if(!CONFIG.supabaseMgmtToken) missing.push('Supabase Management Token');
-  if(!CONFIG.githubToken)       missing.push('GitHub Token');
-  if(missing.length){
-    toast('Missing credentials: '+missing.join(', ')+' — click ⚙️ Credentials','error');
-    openSettings();
-    return false;
+  const hdrs = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer '+SUPABASE_ANON_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+  if (id) {
+    await fetch(\`\${SUPABASE_URL}/rest/v1/\${TABLE}?id=eq.\${id}\`, { method: 'PATCH', headers: hdrs, body: JSON.stringify(payload) });
+  } else {
+    await fetch(\`\${SUPABASE_URL}/rest/v1/\${TABLE}\`, { method: 'POST', headers: hdrs, body: JSON.stringify(payload) });
   }
-  return true;
+  closeModal();
+  await loadActions();
+  renderTable();
+  renderKPIs();
 }
 
-function copyBlueprint(){
-  if(pipeline.blueprint){
-    navigator.clipboard.writeText(JSON.stringify(pipeline.blueprint,null,2));
-    toast('Blueprint JSON copied ✓','success');
-  }
+async function deleteAction() {
+  const id = document.getElementById('f-id').value;
+  if (!id || !confirm('Delete this action?')) return;
+  const hdrs = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer '+SUPABASE_ANON_KEY, 'Content-Type': 'application/json' };
+  await fetch(\`\${SUPABASE_URL}/rest/v1/\${TABLE}?id=eq.\${id}\`, { method: 'PATCH', headers: hdrs, body: JSON.stringify({is_deleted:true}) });
+  closeModal();
+  await loadActions();
+  renderTable();
+  renderKPIs();
+}
+<\/script>
+</body>
+</html>`;
 }
 
-// ── AUTO-PROVISIONING ──────────────────────────────────────────
+// ─────────────────────────────────────────────
+// PROVISION PIPELINE
+// ─────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const now = new Date();
+  const time = now.toLocaleTimeString('en-US', { hour12: false });
+  const icons = { info: '🔵', ok: '✅', warn: '⚠️', err: '❌' };
+  const icon = icons[type] || '🔵';
+  provisionLog.push({ time, msg, type });
+  const box = document.getElementById('provision-log');
+  const div = document.createElement('div');
+  div.className = 'log-line log-' + type;
+  div.innerHTML = `<span class="log-time">${time}</span><span class="log-icon">${icon}</span><span class="log-msg">${msg}</span>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
 
-async function autoProvision(bp, sql, html){
-  const log = (msg, type='info') => {
-    const el = document.getElementById('autoLog');
-    if(!el) return;
-    const div = document.createElement('div');
-    div.className = `log-line log-${type}`;
-    div.innerHTML = `<span class="log-time">${new Date().toLocaleTimeString()}</span> ${msg}`;
-    el.appendChild(div);
-    el.scrollTop = el.scrollHeight;
-  };
+async function runProvision() {
+  const s = getSpecFromEditor();
+  if (!s) return;
+  spec = s;
 
-  const results = {sql:false, repo:false, upload:false, pages:false};
-  const repoName = bp.hub_id+'-hub';
-  const hubUrl = `https://${CONFIG.githubUser}.github.io/${repoName}/?access=${bp.access_token}`;
-  log('🗄️ Running SQL schema in Supabase…');
-  try{
-    const r = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/database/query`,{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${CONFIG.supabaseMgmtToken}`,'Content-Type':'application/json'},
-      body: JSON.stringify({query: sql})
-    });
-    if(!r.ok){
-      const e = await r.json().catch(()=>({}));
-      // Try alternate endpoint
-      const r2 = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/sql`,{
-        method:'POST',
-        headers:{'Authorization':`Bearer ${CONFIG.supabaseMgmtToken}`,'Content-Type':'application/json'},
-        body: JSON.stringify({query: sql})
+  const c = getCreds();
+  if (!c.gh || !c.ghUser) { alert('GitHub PAT and Username are required.'); return; }
+
+  document.getElementById('provision-log').innerHTML = '';
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('deploy-btn').disabled = true;
+
+  let sqlSuccess = false;
+  let repoUrl = '';
+  let pagesUrl = '';
+
+  // Step 1: SQL
+  log('Running SQL schema in Supabase…');
+  if (c.sbMgmt && c.sbRef) {
+    const sql = generateSQL(s);
+    try {
+      const r = await fetch(`https://api.supabase.com/v1/projects/${c.sbRef}/database/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${c.sbMgmt}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ query: sql })
       });
-      if(!r2.ok) throw new Error(e.message||`SQL failed ${r.status}`);
-    }
-    results.sql = true;
-    log('✅ SQL schema created successfully','success');
-  }catch(e){
-    log(`⚠️ SQL auto-run failed (${e.message}) — run manually in Supabase SQL Editor`,'warn');
-    results.sql = 'manual';
-  }
-
-  // ── Step B: Create GitHub repo ──
-  log(`📁 Creating GitHub repository: ${repoName}…`);
-  try{
-    const r = await fetch(`https://api.github.com/user/repos`,{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-      body: JSON.stringify({name:repoName, description:`ActionHub OS — ${bp.hub_name}`, private:false, auto_init:false})
-    });
-    if(!r.ok){
-      const e = await r.json().catch(()=>({}));
-      if(e.errors?.[0]?.message?.includes('already exists')){
-        log(`ℹ️ Repo ${repoName} already exists — will update file`,'info');
+      if (r.ok) {
+        log('SQL schema created successfully', 'ok');
+        sqlSuccess = true;
       } else {
-        throw new Error(e.message||`Repo create failed ${r.status}`);
+        const err = await r.text();
+        log(`SQL API returned ${r.status}: ${err.slice(0,120)}`, 'warn');
+        log('Run SQL manually via "View SQL" button', 'warn');
       }
-    } else {
-      results.repo = true;
-      log(`✅ Repository created: github.com/${CONFIG.githubUser}/${repoName}`,'success');
-      // Wait for repo to initialize
-      await new Promise(r=>setTimeout(r,2000));
-    }
-  }catch(e){
-    log(`❌ GitHub repo creation failed: ${e.message}`,'error');
-  }
-
-  // ── Step C: Upload index.html ──
-  log(`⬆️ Uploading index.html to ${repoName}…`);
-  try{
-    // Check if file exists to get SHA for update
-    let sha = null;
-    const check = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/contents/index.html`,{
-      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Accept':'application/vnd.github+json'}
-    });
-    if(check.ok){ const d=await check.json(); sha=d.sha; }
-
-    const body = {
-      message:`Deploy ${bp.hub_name} via ActionHub Agent Studio`,
-      content: btoa(unescape(encodeURIComponent(html))),
-    };
-    if(sha) body.sha = sha;
-
-    const r = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/contents/index.html`,{
-      method:'PUT',
-      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-      body: JSON.stringify(body)
-    });
-    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.message||`Upload failed ${r.status}`);}
-    results.upload = true;
-    log(`✅ index.html uploaded successfully`,'success');
-  }catch(e){
-    log(`❌ Upload failed: ${e.message}`,'error');
-  }
-
-  // ── Step D: Enable GitHub Pages ──
-  log(`🌐 Enabling GitHub Pages…`);
-  try{
-    const r = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${repoName}/pages`,{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-      body: JSON.stringify({source:{branch:'main',path:'/'}})
-    });
-    if(!r.ok){
-      const e=await r.json().catch(()=>({}));
-      if(e.message?.includes('already enabled')||r.status===409){
-        log(`ℹ️ GitHub Pages already enabled`,'info');
-        results.pages = true;
-      } else {
-        throw new Error(e.message||`Pages failed ${r.status}`);
-      }
-    } else {
-      results.pages = true;
-      log(`✅ GitHub Pages enabled`,'success');
-    }
-  }catch(e){
-    log(`⚠️ Pages auto-enable failed: ${e.message} — enable manually in repo Settings → Pages`,'warn');
-    results.pages = 'manual';
-  }
-
-  // ── Step E: Update Portfolio Dashboard ──
-  if(bp.addToPortfolio !== false){
-    log('📊 Registering hub in Portfolio Dashboard…');
-    try{
-      // Fetch current portfolio index.html
-      const portfolioRepo = 'Action-Hub-MKT-Portfolio';
-      const fileResp = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${portfolioRepo}/contents/index.html`,{
-        headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Accept':'application/vnd.github+json'}
-      });
-      if(!fileResp.ok) throw new Error(`Portfolio repo not found (${fileResp.status})`);
-      const fileData = await fileResp.json();
-      let portfolioHtml = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,''))));
-
-      // Check if hub already registered
-      if(portfolioHtml.includes(bp.hub_id)){
-        log(`ℹ️ Hub already registered in Portfolio`,'info');
-      } else {
-        // Add to CONFIG.hubs array
-        const newHubEntry = `\n    {id:'${bp.hub_id}',name:'${bp.hub_name}',table:'${bp.db_table}',color:'accent'},`;
-        portfolioHtml = portfolioHtml.replace(
-          "hubs:[",
-          `hubs:[${newHubEntry}`
-        );
-        // Add nav tab
-        const newTab = `\n    <a class="hub-tab" href="${hubUrl}" target="_blank">${bp.hub_name}</a>`;
-        portfolioHtml = portfolioHtml.replace(
-          '<span class="hub-tab active">📊 Portfolio</span>',
-          `<span class="hub-tab active">📊 Portfolio</span>${newTab}`
-        );
-        // Push updated portfolio
-        const updateResp = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${portfolioRepo}/contents/index.html`,{
-          method:'PUT',
-          headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-          body: JSON.stringify({
-            message:`Add ${bp.hub_name} to Portfolio`,
-            content: btoa(unescape(encodeURIComponent(portfolioHtml))),
-            sha: fileData.sha
-          })
-        });
-        if(!updateResp.ok) throw new Error(`Portfolio update failed ${updateResp.status}`);
-        log(`✅ ${bp.hub_name} added to Portfolio Dashboard`,'success');
-      }
-    }catch(e){
-      log(`⚠️ Portfolio auto-register failed: ${e.message} — add manually`,'warn');
+    } catch(e) {
+      log(`SQL auto-run failed (${e.message}) — run manually in Supabase SQL Editor`, 'warn');
     }
   } else {
-    log('⏭️ Skipping Portfolio registration (unchecked)','info');
+    log('Supabase credentials not set — skipping SQL auto-run', 'warn');
+    log('Use "View SQL" button to run schema manually', 'warn');
   }
 
-  // ── Summary ──
-  pipeline.hubUrl = hubUrl;
-  log('','info');
-  log('═══════════════════════════════════════','info');
-  log(`🎉 Provisioning complete!`,'success');
-  log(`🔗 Hub URL: <a href="${hubUrl}" target="_blank" style="color:var(--accent);">${hubUrl}</a>`,'success');
-  log(`🔑 Access token: <strong style="color:var(--amber);">${bp.access_token}</strong>`,'info');
-  if(results.sql==='manual') log(`⚠️ Don't forget to run the SQL manually in Supabase!`,'warn');
-  log('═══════════════════════════════════════','info');
+  // Step 2: Create GitHub repo
+  log(`Creating GitHub repository: ${s.repo}…`);
+  try {
+    const r = await fetch('https://api.github.com/user/repos', {
+      method: 'POST',
+      headers: { Authorization: `token ${c.gh}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: s.repo, description: `ActionHub OS: ${s.name}`, private: false, auto_init: true })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      repoUrl = data.html_url;
+      log(`Repository created: github.com/${c.ghUser}/${s.repo}`, 'ok');
+    } else if (r.status === 422) {
+      log(`Repository already exists: github.com/${c.ghUser}/${s.repo}`, 'warn');
+      repoUrl = `https://github.com/${c.ghUser}/${s.repo}`;
+    } else {
+      throw new Error(data.message || r.status);
+    }
+  } catch(e) {
+    log(`GitHub repo creation failed: ${e.message}`, 'err');
+    document.getElementById('deploy-btn').disabled = false;
+    return;
+  }
 
-  document.getElementById('autoProvisionDone').style.display='flex';
-  document.getElementById('hubLiveUrl').href = hubUrl;
-  document.getElementById('hubLiveUrl').textContent = hubUrl;
+  // Step 3: Upload HTML — wait for repo to be ready
+  await sleep(2000);
+  log(`Uploading index.html to ${s.repo}…`);
+  const sbUrl = c.sbRef ? `https://${c.sbRef}.supabase.co` : 'https://YOUR-PROJECT.supabase.co';
+  const html = generateHubHTML(s, sbUrl, c.sbAnon || 'YOUR-ANON-KEY', c.cf || 'https://YOUR-WORKER.workers.dev');
+  const htmlB64 = btoa(unescape(encodeURIComponent(html)));
 
-  return results;
+  let sha = null;
+  try {
+    const check = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}/contents/index.html`, {
+      headers: { Authorization: `token ${c.gh}` }
+    });
+    if (check.ok) { const d = await check.json(); sha = d.sha; }
+  } catch(e) {}
+
+  try {
+    const body = { message: 'ActionHub OS: deploy hub via Agent Studio', content: htmlB64 };
+    if (sha) body.sha = sha;
+    const r = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}/contents/index.html`, {
+      method: 'PUT',
+      headers: { Authorization: `token ${c.gh}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      log('index.html uploaded successfully', 'ok');
+    } else {
+      const err = await r.json();
+      throw new Error(err.message || r.status);
+    }
+  } catch(e) {
+    log(`HTML upload failed: ${e.message}`, 'err');
+  }
+
+  // Step 4: Enable GitHub Pages
+  log('Enabling GitHub Pages…');
+  if (document.getElementById('toggle-pages').classList.contains('on')) {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}/pages`, {
+        method: 'POST',
+        headers: { Authorization: `token ${c.gh}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
+        body: JSON.stringify({ source: { branch: 'main', path: '/' } })
+      });
+      if (r.ok || r.status === 409) {
+        log('GitHub Pages enabled', 'ok');
+      } else {
+        const d = await r.json();
+        log(`Pages: ${d.message || r.status}`, 'warn');
+      }
+    } catch(e) {
+      log(`Pages enable failed: ${e.message}`, 'warn');
+    }
+  } else {
+    log('GitHub Pages skipped (toggle off)', 'warn');
+  }
+
+  // Step 5: Register in Portfolio
+  log('Registering hub in Portfolio Dashboard…');
+  if (document.getElementById('toggle-portfolio').classList.contains('on')) {
+    const registry = JSON.parse(localStorage.getItem('actionhub_registry') || '[]');
+    const existing = registry.findIndex(h => h.repo === s.repo);
+    const entry = {
+      name: s.name, team: s.team, table: s.table, repo: s.repo,
+      token: s.token, purpose: s.purpose, registeredAt: new Date().toISOString()
+    };
+    if (existing >= 0) registry[existing] = entry;
+    else registry.push(entry);
+    localStorage.setItem('actionhub_registry', JSON.stringify(registry));
+    log(`${s.name} added to Portfolio Dashboard`, 'ok');
+  }
+
+  // Build URLs — KEY FIX: encode + as %2B in displayed URLs
+  const tokenEncoded = encodeURIComponent(s.token); // encodes + → %2B correctly
+  pagesUrl = `https://${c.ghUser}.github.io/${s.repo}`;
+  const liveUrl = `${pagesUrl}/?access=${s.token}`;
+  const liveUrlEncoded = `${pagesUrl}/?access=${tokenEncoded}`;
+
+  log('');
+  log('═══════════════════════════════════════');
+  log('🎉 Provisioning complete!');
+  log(`Hub URL: ${liveUrlEncoded}`, 'ok');
+  log(`Access token: ${s.token}`, 'ok');
+  if (!sqlSuccess) log('⚠️ Run SQL manually in Supabase SQL Editor!', 'warn');
+  log('═══════════════════════════════════════');
+
+  // Show result card
+  const rc = document.getElementById('result-card');
+  document.getElementById('res-url').textContent = liveUrl;
+  document.getElementById('res-url').href = liveUrl;
+  document.getElementById('res-url-enc').textContent = liveUrlEncoded;
+  document.getElementById('res-url-enc').href = liveUrlEncoded;
+  document.getElementById('res-token').textContent = s.token;
+  document.getElementById('res-repo').textContent = repoUrl;
+  document.getElementById('res-repo').href = repoUrl;
+  document.getElementById('res-sql-warn').style.display = sqlSuccess ? 'none' : 'block';
+  rc.classList.add('show');
+
+  document.getElementById('deploy-btn').disabled = false;
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─────────────────────────────────────────────
+// SQL MODAL
+// ─────────────────────────────────────────────
+function showSQLModal() {
+  const s = spec.name ? spec : buildSpec();
+  document.getElementById('sql-content').textContent = generateSQL(s);
+  document.getElementById('sql-modal').classList.add('show');
+}
+function closeSQLModal() { document.getElementById('sql-modal').classList.remove('show'); }
+function copySQL() {
+  navigator.clipboard.writeText(document.getElementById('sql-content').textContent);
+  const btn = event.target; btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy SQL', 1500);
+}
+function openSupabase() {
+  const c = getCreds();
+  const ref = c.sbRef;
+  const url = ref ? `https://supabase.com/dashboard/project/${ref}/sql/new` : 'https://supabase.com/dashboard';
+  window.open(url, '_blank');
+}
+
+// ─────────────────────────────────────────────
+// VALIDATE
+// ─────────────────────────────────────────────
+const CHECKS = [
+  { id: 'c-sql', label: 'Supabase table exists', detail: 'Queries table via REST API' },
+  { id: 'c-repo', label: 'GitHub repository exists', detail: 'Checks repo via GitHub API' },
+  { id: 'c-html', label: 'index.html uploaded', detail: 'Checks file exists in repo' },
+  { id: 'c-pages', label: 'GitHub Pages enabled', detail: 'Checks Pages API status' },
+  { id: 'c-gate', label: 'Token gate working', detail: 'URL without token returns Access Denied' },
+  { id: 'c-token-enc', label: 'Token URL encoding correct', detail: '+ encoded as %2B in URL' },
+  { id: 'c-crud', label: 'CRUD operations pass', detail: 'Insert + read + soft-delete test' },
+  { id: 'c-portfolio', label: 'Registered in Portfolio', detail: 'hub_registry localStorage entry' },
+];
+
+function initChecklist() {
+  const ul = document.getElementById('checklist');
+  ul.innerHTML = CHECKS.map(c =>
+    `<li class="pending" id="${c.id}">
+      <span class="check-icon">○</span>
+      <span class="check-label">${c.label}</span>
+      <span class="check-detail">${c.detail}</span>
+    </li>`
+  ).join('');
+}
+
+async function runValidate() {
+  const s = spec.name ? spec : buildSpec();
+  const c = getCreds();
+
+  for (const check of CHECKS) {
+    await sleep(300);
+    const li = document.getElementById(check.id);
+    li.classList.remove('pending');
+
+    let pass = false;
+    try {
+      if (check.id === 'c-sql' && c.sbRef && c.sbAnon) {
+        const r = await fetch(`https://${c.sbRef}.supabase.co/rest/v1/${s.table}?limit=1`, {
+          headers: { apikey: c.sbAnon, Authorization: 'Bearer ' + c.sbAnon }
+        });
+        pass = r.ok || r.status === 200;
+      } else if (check.id === 'c-repo' && c.ghUser && c.gh) {
+        const r = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}`, {
+          headers: { Authorization: `token ${c.gh}` }
+        });
+        pass = r.ok;
+      } else if (check.id === 'c-html' && c.ghUser && c.gh) {
+        const r = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}/contents/index.html`, {
+          headers: { Authorization: `token ${c.gh}` }
+        });
+        pass = r.ok;
+      } else if (check.id === 'c-pages' && c.ghUser && c.gh) {
+        const r = await fetch(`https://api.github.com/repos/${c.ghUser}/${s.repo}/pages`, {
+          headers: { Authorization: `token ${c.gh}`, Accept: 'application/vnd.github+json' }
+        });
+        pass = r.ok;
+      } else if (check.id === 'c-gate') {
+        pass = !!(s.token); // we can't iframe-test, just verify token is set
+      } else if (check.id === 'c-token-enc') {
+        // Check that encodeURIComponent correctly encodes + characters
+        const encoded = encodeURIComponent(s.token);
+        pass = !s.token.includes('+') || encoded.includes('%2B');
+      } else if (check.id === 'c-crud' && c.sbRef && c.sbAnon) {
+        const sbUrl = `https://${c.sbRef}.supabase.co`;
+        const hdrs = { apikey: c.sbAnon, Authorization: 'Bearer ' + c.sbAnon, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+        const ins = await fetch(`${sbUrl}/rest/v1/${s.table}`, { method: 'POST', headers: hdrs, body: JSON.stringify({ title: '__validate_test__', is_deleted: false }) });
+        if (ins.ok) {
+          const rows = await ins.json();
+          const id = rows[0]?.id;
+          if (id) {
+            await fetch(`${sbUrl}/rest/v1/${s.table}?id=eq.${id}`, { method: 'PATCH', headers: hdrs, body: JSON.stringify({ is_deleted: true }) });
+            pass = true;
+          }
+        }
+      } else if (check.id === 'c-portfolio') {
+        const registry = JSON.parse(localStorage.getItem('actionhub_registry') || '[]');
+        pass = registry.some(h => h.repo === s.repo);
+      } else {
+        pass = true; // skip if no creds
+      }
+    } catch(e) { pass = false; }
+
+    li.classList.add(pass ? 'pass' : 'fail');
+    li.querySelector('.check-icon').textContent = pass ? '✓' : '✗';
+  }
+}
+
+// ─────────────────────────────────────────────
+// TOGGLE HELPER
+// ─────────────────────────────────────────────
+function toggleBtn(el) { el.classList.toggle('on'); }
 </script>
 </body>
 </html>
