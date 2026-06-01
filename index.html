@@ -476,8 +476,7 @@ function generateBlueprintLocally(){
     ? document.getElementById('iFilters').value.split(',').map(s=>s.trim()).filter(Boolean)
     : ['type','priority','status'];
   const extraRaw = document.getElementById('iFields').value;
-  const extra_fields = extraRaw ? extraRaw.split('
-').filter(l=>l.trim()).map(l=>{
+  const extra_fields = extraRaw ? extraRaw.split('\n').filter(l=>l.trim()).map(l=>{
     const p=l.split('|'); return{name:p[0].trim().toLowerCase().replace(/\s+/g,'_'),label:p[0].trim(),type:p[1]?.trim()||'text'};
   }) : [];
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
@@ -837,12 +836,9 @@ async function generateHTML(bp){
     }
     return `<div><label>${f.label}</label><input id="m${f.name}" placeholder="${f.label}..."/></div>`;
   }).join('');
-  const extraFieldsSave = (bp.extra_fields||[]).map(f => `${f.name}:document.getElementById('m${f.name}')?.value||''`).join(',
-    ');
-  const extraFieldsPayload = (bp.extra_fields||[]).map(f => `${f.name}:row.${f.name}||''`).join(',
-    ');
-  const extraFieldsNorm = (bp.extra_fields||[]).map(f => `${f.name}:r.${f.name}||''`).join(',
-    ');
+  const extraFieldsSave = (bp.extra_fields||[]).map(f => `${f.name}:document.getElementById('m${f.name}')?.value||''`).join(',\n    ');
+  const extraFieldsPayload = (bp.extra_fields||[]).map(f => `${f.name}:row.${f.name}||''`).join(',\n    ');
+  const extraFieldsNorm = (bp.extra_fields||[]).map(f => `${f.name}:r.${f.name}||''`).join(',\n    ');
   const extraFieldsRow = (bp.extra_fields||[]).map(f => `<td>\${esc(r.${f.name}||'')}</td>`).join('');
   const extraFieldsOpen = (bp.extra_fields||[]).map(f => `s('m${f.name}',row?.${f.name});`).join('');
   const typeOptions = (bp.action_types||['Issue','Feature Request','Project Action']).map(t=>`<option>${t}</option>`).join('');
