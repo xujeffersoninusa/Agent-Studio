@@ -869,9 +869,9 @@ async function generateHTML(bp){
     }
     return `<div><label>${f.label}</label><input id="m${f.name}" placeholder="${f.label}..."/></div>`;
   }).join('');
-  const extraFieldsSave = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:document.getElementById('m${f.name}')?.value||''`).join(',\n    ')+',':'';
-  const extraFieldsPayload = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:row.${f.name}||''`).join(',\n    ')+',':'';
-  const extraFieldsNorm = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:r.${f.name}||''`).join(',\n    ')+',':'';
+  const extraFieldsSave = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:document.getElementById('m${f.name}')?.value||''`).join(',')+',':'';
+  const extraFieldsPayload = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:row.${f.name}||''`).join(',')+',':'';
+  const extraFieldsNorm = (bp.extra_fields||[]).length?(bp.extra_fields||[]).map(f=>`${f.name}:r.${f.name}||''`).join(',')+',':'';
   const extraFieldsRow = (bp.extra_fields||[]).map(f=>`<td>'+esc(r.${f.name}||'')+'</td>`).join('');
   const extraFieldsOpen = (bp.extra_fields||[]).map(f => `s('m${f.name}',row?.${f.name});`).join('');
   const typeOptions = (bp.action_types||['Issue','Feature Request','Project Action']).map(t=>`<option>${t}</option>`).join('');
@@ -1480,6 +1480,7 @@ function copyBlueprint(){
 
 // ── AUTO-PROVISIONING ──────────────────────────────────────────
 
+function b64encUTF8(str){const bytes=new TextEncoder().encode(str);let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin);}
 async function autoProvision(bp, sql, html){
   const log = (msg, type='info') => {
     const el = document.getElementById('autoLog');
@@ -1556,6 +1557,16 @@ async function autoProvision(bp, sql, html){
   }
 
   // ── Step C: Upload index.html ──
+    // Validate generated HTML syntax before upload
+  log('🔍 Validating generated JS syntax…');
+  try{
+    let biggest='',vp=0;while(true){const vs=html.indexOf('<script>',vp);if(vs===-1)break;const ve=html.indexOf('<\\/script>',vs);if(ve===-1)break;const vc=html.substring(vs+8,ve);if(vc.length>biggest.length)biggest=vc;vp=ve+10;}
+    if(biggest.length>100){new Function(biggest);log('✅ JS syntax validation passed','success');}
+  }catch(valErr){
+    log('❌ JS SYNTAX ERROR: '+valErr.message,'error');
+    log('⛔ Aborting — fix generateHTML() template','error');
+    return results;
+  }
   log(`⬆️ Uploading index.html to ${repoName}…`);
   try{
     // Check if file exists to get SHA for update
@@ -1567,7 +1578,7 @@ async function autoProvision(bp, sql, html){
 
     const body = {
       message:`Deploy ${bp.hub_name} via ActionHub Agent Studio`,
-      content: btoa(unescape(encodeURIComponent(html))),
+      content: b64encUTF8(html),
     };
     if(sha) body.sha = sha;
 
