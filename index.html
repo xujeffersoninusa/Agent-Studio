@@ -214,7 +214,7 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
       ✅ Credentials are stored in your <strong>browser localStorage only</strong> — never in the HTML file or GitHub.
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <div><label>Supabase Management Token (sbp_...)</label><input id="sSbpToken" type="password" placeholder="sbp_..."/></div>
+      <div><label>Supabase Management Token (sbp_...)</label><input id="sSbpToken" type="password" placeholder="sbp_..."/><div style="font-size:11px;color:var(--muted);margin-top:4px;">Get from <a href="https://supabase.com/dashboard/account/tokens" target="_blank" style="color:var(--accent);">supabase.com/dashboard/account/tokens</a> — needed for auto SQL table creation</div></div>
       <div><label>GitHub Personal Access Token (ghp_...)</label><input id="sGhToken" type="password" placeholder="ghp_..."/></div>
       <div><label>GitHub Username</label><input id="sGhUser" placeholder="xujeffersoninusa"/></div>
       <div><label>Cloudflare Proxy URL</label><input id="sProxy" placeholder="https://rapid-pine-a057.xujefferson.workers.dev"/></div>
@@ -1464,29 +1464,35 @@ async function autoProvision(bp, sql, html){
   log('🗄️ Running SQL schema in Supabase…');
   try{
     if(!CONFIG.supabaseMgmtToken) throw new Error('No Supabase Management Token — add it in ⚙️ Credentials');
-    const r = await fetch(`https://api.supabase.com/v1/projects/${CONFIG.supabaseProjectRef}/database/query`,{
-      method:'POST',
-      headers:{'Authorization':`Bearer ${CONFIG.supabaseMgmtToken}`,'Content-Type':'application/json'},
-      body: JSON.stringify({query: sql})
+    // Route through Cloudflare Worker proxy to avoid CORS block on Supabase Management API
+    const proxyUrl = CONFIG.proxyUrl || 'https://rapid-pine-a057.xujefferson.workers.dev';
+    const r = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target:     'supabase-sql',
+        projectRef: CONFIG.supabaseProjectRef,
+        mgmtToken:  CONFIG.supabaseMgmtToken,
+        sql:        sql
+      })
     });
+    const respBody = await r.json().catch(()=>({}));
     if(!r.ok){
-      const errBody = await r.json().catch(()=>({}));
-      throw new Error(errBody.message||errBody.error||`HTTP ${r.status} — check your Management Token`);
+      throw new Error(respBody.message || respBody.error || `HTTP ${r.status} — check Management Token`);
     }
     results.sql = true;
-    log('✅ SQL schema created successfully','success');
+    log('✅ SQL schema created in Supabase automatically','success');
   }catch(e){
-    log(`⚠️ SQL auto-run failed (${e.message}) — run manually in Supabase SQL Editor`,'warn');
-    log(`📋 SQL is ready in the code viewer — copy and paste into Supabase → SQL Editor → Run`,'warn');
+    log(`⚠️ SQL auto-run failed (${e.message})`,'warn');
     results.sql = 'manual';
-    // Show prominent copy + link buttons
     setTimeout(()=>{
       const autoLog = document.getElementById('autoLog');
       if(!autoLog) return;
       const div = document.createElement('div');
       div.style.cssText='margin:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
       div.innerHTML='<button style="padding:7px 14px;background:var(--amber-s);color:var(--amber);border:1px solid rgba(251,191,36,.3);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;" onclick="navigator.clipboard.writeText(pipeline.generatedSQL);this.textContent=\'✓ Copied!\';setTimeout(()=>this.textContent=\'📋 Copy SQL\',2000)">📋 Copy SQL</button>'
-        +'<a href="https://supabase.com/dashboard/project/'+CONFIG.supabaseProjectRef+'/sql/new" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;padding:7px 12px;border:1px solid rgba(96,165,250,.3);border-radius:8px;background:var(--accent-s);">→ Open Supabase SQL Editor</a>';
+        +'<a href="https://supabase.com/dashboard/project/'+CONFIG.supabaseProjectRef+'/sql/new" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;padding:7px 12px;border:1px solid rgba(96,165,250,.3);border-radius:8px;background:var(--accent-s);">→ Open Supabase SQL Editor</a>'
+        +'<span style="font-size:11px;color:var(--muted);">⬆️ If auto-run failed: copy SQL above and run in Supabase</span>';
       autoLog.appendChild(div);
     },100);
   }
