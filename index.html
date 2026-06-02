@@ -509,19 +509,34 @@ function generateBlueprintLocally(){
   toast('Blueprint generated locally ✓','success');
 }
 
+
 async function testProxy(){
   const status = document.getElementById('intakeStatus');
   status.textContent = '🔌 Testing…';
   status.style.color = 'var(--muted)';
   // Force reload config from localStorage
   const stored = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  const proxyUrl = stored.proxyUrl || CONFIG.proxyUrl || 'https://rapid-pine-a057.xujefferson.workers.dev';
+  const proxyUrl  = stored.proxyUrl  || CONFIG.proxyUrl || 'https://rapid-pine-a057.xujefferson.workers.dev';
+  const claudeKey = stored.claudeKey || CONFIG.claudeKey || '';
   console.log('testProxy using URL:', proxyUrl);
+  
+  if(!claudeKey){
+    status.textContent = '❌ No Claude API Key — click ⚙️ Credentials to add it';
+    status.style.color = 'var(--red)';
+    toast('Missing Claude API Key','error');
+    return;
+  }
+  
   try{
     const resp = await fetch(proxyUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-5',max_tokens:20,messages:[{role:'user',content:'Say OK'}]})
+      body:JSON.stringify({
+        model:'claude-sonnet-4-5',
+        max_tokens:20,
+        messages:[{role:'user',content:'Say OK'}],
+        apiKey: claudeKey          // ← THIS WAS MISSING — the Worker needs it!
+      })
     });
     const d = await resp.json();
     console.log('testProxy response:', d);
