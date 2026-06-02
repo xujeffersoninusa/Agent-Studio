@@ -214,6 +214,7 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
       ✅ Credentials are stored in your <strong>browser localStorage only</strong> — never in the HTML file or GitHub.
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;">
+      <div><label>Claude API Key (sk-ant-...)</label><input id="sClaudeKey" type="password" placeholder="sk-ant-api03-..."/><div style="font-size:11px;color:var(--muted);margin-top:4px;">Used by AI Agent in hubs. Get from <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent);">console.anthropic.com</a></div></div>
       <div><label>Supabase Management Token (sbp_...)</label><input id="sSbpToken" type="password" placeholder="sbp_..."/><div style="font-size:11px;color:var(--muted);margin-top:4px;">Get from <a href="https://supabase.com/dashboard/account/tokens" target="_blank" style="color:var(--accent);">supabase.com/dashboard/account/tokens</a> — needed for auto SQL table creation</div></div>
       <div><label>GitHub Personal Access Token (ghp_...)</label><input id="sGhToken" type="password" placeholder="ghp_..."/></div>
       <div><label>GitHub Username</label><input id="sGhUser" placeholder="xujeffersoninusa"/></div>
@@ -1398,6 +1399,7 @@ function publish(){
 
 function openSettings(){
   const s=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  document.getElementById('sClaudeKey').value = s.claudeKey||'';
   document.getElementById('sSbpToken').value = s.supabaseMgmtToken||'';
   document.getElementById('sGhToken').value  = s.githubToken||'';
   document.getElementById('sGhUser').value   = s.githubUser||'xujeffersoninusa';
@@ -1411,6 +1413,7 @@ function saveSettings(){
   const existing = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
   const updated = {
     ...existing,
+    claudeKey:         document.getElementById('sClaudeKey').value.trim(),
     supabaseMgmtToken: document.getElementById('sSbpToken').value.trim(),
     githubToken:       document.getElementById('sGhToken').value.trim(),
     githubUser:        document.getElementById('sGhUser').value.trim(),
