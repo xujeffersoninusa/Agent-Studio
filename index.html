@@ -189,14 +189,7 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
     <h1>Agent Studio</h1>
     <span class="studio-badge">Hub Builder · Jefferson Only</span>
   </div>
-  <div class="nav-tabs">
-    <a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/uLED/?access=jeffersonxuinteradyne" target="_blank">🔵 uLED Hub</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/ImageSensor/?access=imgsensorteradyne2026" target="_blank">🟣 IS Hub</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/dc-instrument-hub/?access=computertestdivision%2Bteradyne%2B2026" target="_blank">🟠 DC Hub</a>
-    <a class="nav-tab" href="https://xujeffersoninusa.github.io/ac-instrument-hub/?access=computertestdivision%2Bteradyne%2B2026" target="_blank">🟡 AC Hub</a>
-    <span class="nav-tab active">🤖 Agent Studio</span>
-  </div>
+  <div class="nav-tabs" id="studioNavTabs"><span class="nav-tab active">🤖 Agent Studio</span></div>
   <div style="display:flex;gap:8px;align-items:center;">
     <span style="font-size:11px;color:var(--muted);">Logged in as Jefferson Xu</span>
     <button class="btn-secondary" onclick="openSettings()" style="font-size:11px;padding:5px 10px;">⚙️ Credentials</button>
@@ -428,6 +421,26 @@ const CONFIG = (function(){
     githubUser:        stored.githubUser         || 'xujeffersoninusa',
   };
 })();
+
+async function loadStudioRegistry(){
+  try{
+    var h={'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey};
+    var r=await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?select=*&order=name.asc',{headers:h});
+    if(!r.ok) return;
+    var reg=await r.json();
+    var tabsEl=document.getElementById('studioNavTabs');
+    if(!tabsEl) return;
+    var html='<a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>';
+    reg.forEach(function(h){
+      var url=h.hub_url||'#';
+      html+='<a class="nav-tab" href="'+url+'" target="_blank">'+h.name+'</a>';
+    });
+    html+='<span class="nav-tab active">🤖 Agent Studio</span>';
+    tabsEl.innerHTML=html;
+  }catch(e){console.warn('Studio registry load:',e);}
+}
+document.addEventListener('DOMContentLoaded',function(){setTimeout(loadStudioRegistry,200);});
+
 const toast=(msg,type='')=>{const t=document.getElementById('toast');t.textContent=msg;t.className=type?`show ${type}`:'show';setTimeout(()=>t.className='',3200);};
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
@@ -827,7 +840,7 @@ CREATE OR REPLACE TRIGGER ${bp.db_table}_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- Register in hub registry
-INSERT INTO hub_registry (id, name, team, product, purpose, token, db_table, status, owner)
+INSERT INTO hub_registry (id, name, team, product, purpose, token, db_table, hub_url, in_portfolio, status, owner)
 VALUES (
   '${bp.hub_id}',
   '${bp.hub_name}',
@@ -836,6 +849,8 @@ VALUES (
   '${bp.purpose||''}',
   '${bp.access_token}',
   '${bp.db_table}',
+  'https://xujeffersoninusa.github.io/${bp.hub_id}-hub/?access=' || '${encodeURIComponent(bp.access_token)}',
+  true,
   'live',
   'jefferson.xu@teradyne.com'
 ) ON CONFLICT (id) DO NOTHING;
@@ -886,7 +901,7 @@ body.sec-blocked .shell,body.sec-blocked #topbar,body.sec-blocked #kpibar{displa
 <script>
 (function(){
   var S={validToken:'${bp.access_token}',allowDirect:true};
-  function block(t,m){document.body.classList.remove('sec-pending','sec-allowed');document.body.classList.add('sec-blocked');document.body.insertAdjacentHTML('afterbegin','<div class="security-block"><span style="font-size:48px">🔒</span><h2>'+t+'</h2><p>'+m+'</p></div>');}
+  function block(t,m){document.body.classList.remove('sec-pending','sec-allowed');document.body.classList.add('sec-blocked');var ov=document.getElementById('loadingOverlay');if(ov)ov.classList.add('hidden');document.body.insertAdjacentHTML('afterbegin','<div class="security-block"><span style="font-size:48px">🔒</span><h2>'+t+'</h2><p>'+m+'</p></div>');}
   function allow(){document.body.classList.remove('sec-pending','sec-blocked');document.body.classList.add('sec-allowed');}
   function check(){var raw=new URLSearchParams(location.search).get('access');var token=raw?raw.replace(/ /g,'+'):raw;if(S.allowDirect&&token===S.validToken){allow();return;}block('Access Denied','Use direct link with access token.');}
   document.addEventListener('DOMContentLoaded',check);
@@ -1593,56 +1608,31 @@ async function autoProvision(bp, sql, html){
     results.pages = 'manual';
   }
 
-  // ── Step E: Update Portfolio Dashboard ──
+  // ── Step E: Register in hub_registry ──
   if(bp.addToPortfolio !== false){
-    log('📊 Registering hub in Portfolio Dashboard…');
+    log('📊 Registering hub in Portfolio via hub_registry…');
     try{
-      // Fetch current portfolio index.html
-      const portfolioRepo = 'Action-Hub-MKT-Portfolio';
-      const fileResp = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${portfolioRepo}/contents/index.html`,{
-        headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Accept':'application/vnd.github+json'}
+      var patchHeaders={'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=representation'};
+      var patchResp=await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?id=eq.'+bp.hub_id,{
+        method:'PATCH',
+        headers:patchHeaders,
+        body:JSON.stringify({hub_url:hubUrl,in_portfolio:true})
       });
-      if(!fileResp.ok) throw new Error(`Portfolio repo not found (${fileResp.status})`);
-      const fileData = await fileResp.json();
-      let portfolioHtml = decodeURIComponent(escape(atob(fileData.content.replace(/\n/g,''))));
-
-      // Check if hub already registered
-      if(portfolioHtml.includes(bp.hub_id)){
-        log(`ℹ️ Hub already registered in Portfolio`,'info');
-      } else {
-        // Add to CONFIG.hubs array — use regex to handle whitespace variants
-        const encodedToken = encodeURIComponent(bp.access_token).replace(/%20/g,'%2B');
-        const newHubEntry = `\n    {id:'${bp.hub_id}',name:'${bp.hub_name}',table:'${bp.db_table}',token:'${bp.access_token}',color:'accent'},`;
-        portfolioHtml = portfolioHtml.replace(
-          /hubs\s*:\s*\[/,
-          `hubs:[${newHubEntry}`
-        );
-        // Add nav tab — robust match on active portfolio tab
-        const newTab = `\n    <a class="hub-tab" href="https://${CONFIG.githubUser}.github.io/${bp.hub_id}-hub/?access=${encodedToken}" target="_blank">${bp.hub_name}</a>`;
-        portfolioHtml = portfolioHtml.replace(
-          /(<span[^>]*hub-tab[^>]*active[^>]*>[^<]*Portfolio[^<]*<\/span>)/,
-          `$1${newTab}`
-        );
-        // Push updated portfolio
-        const updateResp = await fetch(`https://api.github.com/repos/${CONFIG.githubUser}/${portfolioRepo}/contents/index.html`,{
-          method:'PUT',
-          headers:{'Authorization':`Bearer ${CONFIG.githubToken}`,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
-          body: JSON.stringify({
-            message:`Add ${bp.hub_name} to Portfolio`,
-            content: btoa(unescape(encodeURIComponent(portfolioHtml))),
-            sha: fileData.sha
-          })
-        });
-        if(!updateResp.ok) throw new Error(`Portfolio update failed ${updateResp.status}`);
-        log(`✅ ${bp.hub_name} added to Portfolio Dashboard`,'success');
-      }
+      if(!patchResp.ok) throw new Error('Registry update failed '+patchResp.status);
+      log('✅ Hub registered — will appear in Portfolio on next load','success');
     }catch(e){
-      log(`⚠️ Portfolio auto-register failed: ${e.message} — add manually`,'warn');
+      log('⚠️ Portfolio registry update failed: '+e.message+' — update hub_registry manually','warn');
     }
   } else {
     log('⏭️ Skipping Portfolio registration (unchecked)','info');
+    try{
+      var patchHeaders2={'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey};
+      await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?id=eq.'+bp.hub_id,{
+        method:'PATCH',headers:patchHeaders2,
+        body:JSON.stringify({hub_url:hubUrl,in_portfolio:false})
+      });
+    }catch(e){}
   }
-
   // ── Summary ──
   pipeline.hubUrl = hubUrl;
   log('','info');
