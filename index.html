@@ -1,4 +1,26 @@
-out+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="text-decoration:none;">\u2699 Hub Manager</a>';
+function hubCard(h,status){
+  var isActive=status==='active';
+  var badge=isActive?'<span style="background:#166534;color:#4ade80;padding:2px 8px;border-radius:10px;font-size:11px;">Active</span>':'<span style="background:#713f12;color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:11px;">Archived</span>';
+  var hubName=h.name||'Unknown';
+  var table=h.db_table||'';
+  var url=h.hub_url||'';
+  var repo=url.match(/github\.io\/([^/]+)/)?url.match(/github\.io\/([^/]+)/)[1]:'';
+  var btns='';
+  if(isActive){
+    btns='<button data-action="archive" data-name="'+hubName+'" data-dbtable="'+table+'" data-huburl="'+url+'" style="background:#b45309;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;">\uD83D\uDCC1 Archive</button>';
+  }else{
+    btns='<button data-action="resume" data-name="'+hubName+'" data-dbtable="'+table+'" data-huburl="'+url+'" style="background:#166534;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;margin-right:6px;">\u25B6 Resume</button>';
+    btns+='<button data-action="harddelete" data-name="'+hubName+'" data-dbtable="'+table+'" data-huburl="'+url+'" style="background:#991b1b;color:#fff;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;">\u26A0 Delete</button>';
+  }
+  return '<div style="background:#1a1a2e;border:1px solid #333;border-radius:10px;padding:14px;">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+    +'<strong style="color:#fff;font-size:14px;">'+hubName+'</strong> '+badge+'</div>'
+    +'<div style="color:#888;font-size:11px;margin-bottom:3px;">Team: '+(h.team||'\u2014')+'</div>'
+    +'<div style="color:#666;font-size:11px;margin-bottom:3px;">Table: '+table+'</div>'
+    +(repo?'<div style="color:#555;font-size:11px;margin-bottom:8px;">Repo: '+repo+'</div>':'')
+    +(isActive&&url?'<div style="margin-bottom:8px;"><a href="'+url+'" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none;">\uD83D\uDD17 Open Hub</a></div>':'<div style="margin-bottom:8px;color:#666;font-size:11px;">\uD83D\uDD12 Offline</div>')
+    +'<div>'+btns+'</div></div>';
+}out+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="text-decoration:none;">\u2699 Hub Manager</a>';
       <!doctype html>
 <html lang="en">
 <head>
@@ -1285,73 +1307,39 @@ async function autoProvision(bp, sql, html){
 
 // ═══ Hub Manager ═══
 async function showHubManager(){
-  // Hide other panels
-  document.querySelectorAll('.step-panel,.provision-panel').forEach(p=>p.style.display='none');
-  
-  // Create or show Hub Manager panel
-  let panel = document.getElementById('hubManagerPanel');
-  if(!panel){
-    panel = document.createElement('div');
-    panel.id = 'hubManagerPanel';
-    panel.style.cssText = 'padding:24px;max-width:1200px;margin:0 auto;';
-    document.querySelector('.main-content,main,.app-body,body').appendChild(panel);
-  }
-  panel.style.display = 'block';
-  panel.innerHTML = '<div style="text-align:center;padding:40px;color:#aaa;">Loading hubs...</div>';
-  
-  // Fetch all hubs from registry
-  const cfg = JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
-  try {
-    const r = await fetch(cfg.proxyUrl, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        target:'supabase-sql',
-        projectRef:'cqgzndwisonvnlsxicmd',
-        mgmtToken:cfg.supabaseMgmtToken,
-        sql:"SELECT * FROM hub_registry ORDER BY created_at DESC;"
-      })
-    });
-    const data = await r.json();
-    const hubs = Array.isArray(data) ? data : (data[0]?.rows || data.rows || []);
-    renderHubManager(panel, hubs, cfg);
-  } catch(e) {
-    panel.innerHTML = '<div style="color:red;padding:20px;">Error loading hubs: '+e.message+'</div>';
-  }
+  document.querySelectorAll('.step-panel,.provision-panel').forEach(function(p){p.style.display='none';});
+  var panel=document.getElementById('hubManagerPanel');
+  if(!panel){panel=document.createElement('div');panel.id='hubManagerPanel';panel.style.cssText='padding:24px;max-width:1200px;margin:0 auto;';document.querySelector('.main-content,main,body').appendChild(panel);}
+  panel.style.display='block';
+  panel.innerHTML='<div style="text-align:center;padding:40px;color:#aaa;">Loading hubs...</div>';
+  try{
+    var r=await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?select=*&order=name.asc',{headers:{'apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey}});
+    var hubs=await r.json();
+    renderHubManager(panel,hubs);
+  }catch(e){panel.innerHTML='<div style="color:red;padding:20px;">Error: '+e.message+'</div>';}
 }
-
-function renderHubManager(panel, hubs, cfg){
-  const active = hubs.filter(h=>h.status!=='archived');
-  const archived = hubs.filter(h=>h.status==='archived');
-  
-  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">';
-  html += '<h2 style="margin:0;color:#fff;">\uD83D\uDEE0 Hub Manager</h2>';
-  html += '<div style="color:#888;font-size:14px;">'+active.length+' active \u2022 '+archived.length+' archived \u2022 '+hubs.length+' total</div>';
-  html += '</div>';
-  
-  // Active hubs
-  html += '<h3 style="color:#4ade80;margin:20px 0 12px;">\uD83D\uDFE2 Active Hubs</h3>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">';
-  active.forEach(h => { html += hubCard(h, 'active'); });
-  if(!active.length) html += '<div style="color:#666;padding:20px;">No active hubs</div>';
-  html += '</div>';
-  
-  // Archived hubs
+function renderHubManager(panel,hubs){
+  var active=hubs.filter(function(h){return h.status!=='archived';});
+  var archived=hubs.filter(function(h){return h.status==='archived';});
+  var out='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">';
+  out+='<h2 style="margin:0;color:#fff;">\uD83D\uDEE0 Hub Manager</h2>';
+  out+='<div style="color:#888;font-size:14px;">'+active.length+' active \u2022 '+archived.length+' archived \u2022 '+hubs.length+' total</div></div>';
+  out+='<h3 style="color:#4ade80;margin:20px 0 12px;">\uD83D\uDFE2 Active Hubs</h3>';
+  out+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">';
+  active.forEach(function(h){out+=hubCard(h,'active');});
+  if(!active.length)out+='<div style="color:#666;padding:20px;">No active hubs</div>';
+  out+='</div>';
   if(archived.length){
-    html += '<h3 style="color:#fbbf24;margin:30px 0 12px;">\uD83D\uDFE1 Archived Hubs</h3>';
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;">';
-    archived.forEach(h => { html += hubCard(h, 'archived'); });
-    html += '</div>';
+    out+='<h3 style="color:#fbbf24;margin:30px 0 12px;">\uD83D\uDFE1 Archived Hubs</h3>';
+    out+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">';
+    archived.forEach(function(h){out+=hubCard(h,'archived');});
+    out+='</div>';
   }
-  
-  panel.innerHTML = html;
-  
-  // Bind button events
-  panel.querySelectorAll('[data-action]').forEach(btn => {
-    btn.onclick = () => hubManagerAction(btn.dataset.action, btn.dataset.hubid, btn.dataset.hubrepo, btn.dataset.hubtable, cfg, panel);
+  panel.innerHTML=out;
+  panel.querySelectorAll('[data-action]').forEach(function(btn){
+    btn.onclick=function(){hubManagerAction(btn.dataset.action,btn.dataset.name,btn.dataset.dbtable,btn.dataset.huburl,panel);};
   });
 }
-
 function hubCard(h, status){
   const isActive = status === 'active';
   const badge = isActive ? '<span style="background:#166534;color:#4ade80;padding:2px 8px;border-radius:10px;font-size:11px;">Active</span>' : '<span style="background:#713f12;color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:11px;">Archived</span>';
@@ -1378,108 +1366,40 @@ function hubCard(h, status){
     + '</div>';
 }
 
-async function hubManagerAction(action, hubId, repo, table, cfg, panel){
-  const TOKEN = cfg.githubToken;
-  const USER = 'xujeffersoninusa';
+async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
+  var cfg=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
+  var TOKEN=cfg.githubToken;
+  var USER='xujeffersoninusa';
+  var repo=hubUrl.match(/github\.io\/([^/?]+)/)?hubUrl.match(/github\.io\/([^/?]+)/)[1]:'';
+  if(!repo){alert('Cannot determine repo from hub URL');return;}
   
-  if(action === 'archive'){
-    if(!confirm('Archive "'+hubId+'"? Hub will go offline but all data is preserved.')) return;
-    panel.innerHTML = '<div style="padding:40px;text-align:center;color:#fbbf24;">Archiving '+hubId+'...</div>';
-    
-    // 1. Disable GitHub Pages
-    try {
-      await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages', {
-        method:'DELETE',
-        headers:{'Authorization':'Bearer '+TOKEN}
-      });
-      console.log('Pages disabled for '+repo);
-    } catch(e) { console.log('Pages disable note:', e.message); }
-    
-    // 2. Set status = archived in registry
-    await fetch(cfg.proxyUrl, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        target:'supabase-sql',
-        projectRef:'cqgzndwisonvnlsxicmd',
-        mgmtToken:cfg.supabaseMgmtToken,
-        sql:"UPDATE hub_registry SET status='archived' WHERE hub_id='"+hubId+"';"
-      })
-    });
-    
-    console.log('\u2705 '+hubId+' archived');
-    showHubManager(); // refresh
-    
-  } else if(action === 'resume'){
-    if(!confirm('Resume "'+hubId+'"? Hub will come back online.')) return;
-    panel.innerHTML = '<div style="padding:40px;text-align:center;color:#4ade80;">Resuming '+hubId+'...</div>';
-    
-    // 1. Re-enable GitHub Pages
-    try {
-      await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages', {
-        method:'POST',
-        headers:{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'},
-        body:JSON.stringify({source:{branch:'main',path:'/'}})
-      });
-      console.log('Pages re-enabled for '+repo);
-    } catch(e) { console.log('Pages enable note:', e.message); }
-    
-    // 2. Set status = active
-    await fetch(cfg.proxyUrl, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        target:'supabase-sql',
-        projectRef:'cqgzndwisonvnlsxicmd',
-        mgmtToken:cfg.supabaseMgmtToken,
-        sql:"UPDATE hub_registry SET status='active' WHERE hub_id='"+hubId+"';"
-      })
-    });
-    
-    console.log('\u2705 '+hubId+' resumed');
-    showHubManager(); // refresh
-    
-  } else if(action === 'harddelete'){
-    if(!confirm('\u26A0 PERMANENTLY DELETE "'+hubId+'"?\n\nThis will:\n- Delete GitHub repo\n- Drop database table\n- Remove from registry\n\nThis CANNOT be undone!')) return;
-    if(!confirm('Are you REALLY sure? Type the hub name to confirm: (click OK to proceed)')) return;
-    
-    panel.innerHTML = '<div style="padding:40px;text-align:center;color:#ef4444;">Permanently deleting '+hubId+'...</div>';
-    
-    // 1. Delete GitHub repo
-    try {
-      const r = await fetch('https://api.github.com/repos/'+USER+'/'+repo, {
-        method:'DELETE',
-        headers:{'Authorization':'Bearer '+TOKEN}
-      });
-      console.log('Repo:', r.status===204?'deleted':'status '+r.status);
-    } catch(e) { console.log('Repo error:', e.message); }
-    
-    // 2. Drop Supabase table
-    await fetch(cfg.proxyUrl, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        target:'supabase-sql',
-        projectRef:'cqgzndwisonvnlsxicmd',
-        mgmtToken:cfg.supabaseMgmtToken,
-        sql:"DROP TABLE IF EXISTS "+table+";"
-      })
-    });
-    
-    // 3. Delete from registry
-    await fetch(cfg.proxyUrl, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        target:'supabase-sql',
-        projectRef:'cqgzndwisonvnlsxicmd',
-        mgmtToken:cfg.supabaseMgmtToken,
-        sql:"DELETE FROM hub_registry WHERE hub_id='"+hubId+"';"
-      })
-    });
-    
-    console.log('\u2705 '+hubId+' permanently deleted');
-    showHubManager(); // refresh
+  if(action==='archive'){
+    if(!confirm('Archive "'+hubName+'"? Hub will go offline but all data is preserved.'))return;
+    panel.innerHTML='<div style="padding:40px;text-align:center;color:#fbbf24;">Archiving '+hubName+'...</div>';
+    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}
+    console.log('Pages disabled for '+repo);
+    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'archived'})});
+    console.log('\u2705 '+hubName+' archived');
+    showHubManager();
+  }else if(action==='resume'){
+    if(!confirm('Resume "'+hubName+'"? Hub will come back online.'))return;
+    panel.innerHTML='<div style="padding:40px;text-align:center;color:#4ade80;">Resuming '+hubName+'...</div>';
+    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'POST',headers:{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify({source:{branch:'main',path:'/'}})});}catch(e){}
+    console.log('Pages re-enabled for '+repo);
+    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'live'})});
+    console.log('\u2705 '+hubName+' resumed');
+    showHubManager();
+  }else if(action==='harddelete'){
+    if(!confirm('\u26A0 PERMANENTLY DELETE "'+hubName+'"?\n\nThis will delete repo, drop table, and remove from registry.\n\nCANNOT be undone!'))return;
+    if(!confirm('Are you REALLY sure?'))return;
+    panel.innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;">Deleting '+hubName+'...</div>';
+    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo,{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}
+    if(dbTable){
+      try{await fetch(cfg.proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:'supabase-sql',projectRef:'cqgzndwisonvnlsxicmd',mgmtToken:cfg.supabaseMgmtToken,sql:'DROP TABLE IF EXISTS '+dbTable+';'})});}catch(e){}
+    }
+    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'DELETE',headers:{'apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey}});
+    console.log('\u2705 '+hubName+' permanently deleted');
+    showHubManager();
   }
 }
 
