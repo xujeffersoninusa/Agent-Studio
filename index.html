@@ -1,4 +1,5 @@
-<!doctype html>
+out+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="text-decoration:none;">\u2699 Hub Manager</a>';
+      <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -432,25 +433,27 @@ const CONFIG = (function(){
 async function loadStudioRegistry(){
   try{
     var h={'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey};
-    fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?select=*&order=name.asc',{headers:h}).then(function(r){return r.json()}).then(function(reg){
-      var tabsEl=document.getElementById('studioNavTabs');
-      if(!tabsEl) return;
-      var out='';
-      out+='<a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">\uD83D\uDCCA Portfolio</a>';
-      out+='<div style="position:relative;display:inline-block;" id="hubDropWrap">';
-      out+='<button class="nav-tab" onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+reg.length+') \u25BE</button>';
-      out+='<div id="hubDropMenu" style="display:none;position:absolute;top:100%;left:0;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:4px 0;min-width:220px;max-height:400px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);">';
-      reg.forEach(function(h){
+    var r=await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?select=*&order=name.asc',{headers:h});
+    if(!r.ok) return;
+    var reg=await r.json();
+    var tabsEl=document.getElementById('studioNavTabs');
+    if(!tabsEl) return;
+    var html='<a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>';
+    // Build hub dropdown instead of individual tabs
+    if(hubs.length > 0) {
+      html+='<div style="position:relative;display:inline-block;" id="hubDropWrap">';
+      html+='<button onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" class="nav-tab" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+hubs.length+') \u25BE</button>';
+      html+='<div id="hubDropMenu" style="display:none;position:absolute;top:100%;left:0;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:4px 0;min-width:200px;max-height:400px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);">';
+      hubs.forEach(function(h){
         var url=h.hub_url||('https://xujeffersoninusa.github.io/'+h.hub_id+'-hub/');
-        var st=h.status==='archived'?'\uD83D\uDD12 ':'';
-        out+='<a href="'+url+'" target="_blank" style="display:block;padding:6px 14px;color:'+(h.status==='archived'?'#666':'#94a3b8')+';text-decoration:none;font-size:12px;white-space:nowrap;">'+st+(h.hub_name||h.name||h.hub_id)+'</a>';
+        html+='<a href="'+url+'" target="_blank" style="display:block;padding:6px 14px;color:#94a3b8;text-decoration:none;font-size:12px;white-space:nowrap;">'+h.name+'</a>';
       });
-      out+='</div></div>';
-      out+='';
-      out+='<span class="nav-tab active">\uD83E\uDD16 Agent Studio</span>';
-      tabsEl.innerHTML=out;
-    });
-  }catch(e){console.log('registry load error:',e.message);}
+      html+='</div></div>';
+    }
+    html+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="cursor:pointer;">\uD83D\uDEE0 Hub Manager</a>';
+    html+='<span class="nav-tab active">🤖 Agent Studio</span>';
+    tabsEl.innerHTML=html;
+  }catch(e){console.warn('Studio registry load:',e);}
 }
 document.addEventListener('DOMContentLoaded',function(){setTimeout(loadStudioRegistry,200);});
 
