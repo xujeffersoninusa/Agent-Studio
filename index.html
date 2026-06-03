@@ -196,7 +196,7 @@ button{appearance:none;border:none;cursor:pointer;border-radius:9px;padding:9px 
     <h1>Agent Studio</h1>
     <span class="studio-badge">Hub Builder · Jefferson Only</span>
   </div>
-  <div class="nav-tabs" id="studioNavTabs"><span class="nav-tab active">🤖 Agent Studio</span></div>
+  <div class="nav-tabs" id="studioNavTabs"><span onclick="hideHubManager()" style="cursor:pointer;" class="nav-tab active">🤖 Agent Studio</span></div>
   <div style="display:flex;gap:8px;align-items:center;">
     <span style="font-size:11px;color:var(--muted);">Logged in as Jefferson Xu</span>
     <button class="btn-secondary" onclick="openSettings()" style="font-size:11px;padding:5px 10px;">⚙️ Credentials</button>
@@ -1283,6 +1283,19 @@ async function autoProvision(bp, sql, html){
 
 
 // ═══ Hub Manager ═══
+
+function hideHubManager(){
+  var hm=document.getElementById('hubManagerPanel');
+  if(hm)hm.style.display='none';
+  document.querySelectorAll('.step-panel').forEach(function(p){p.style.display='';});
+  var active=document.querySelector('.step-panel.active,.step-panel[style*="block"]');
+  if(!active){
+    var first=document.querySelector('.step-panel');
+    if(first)first.style.display='block';
+  }
+  goStep(1);
+}
+
 async function showHubManager(){
   document.querySelectorAll('.step-panel,.provision-panel').forEach(function(p){p.style.display='none';});
   var panel=document.getElementById('hubManagerPanel');
