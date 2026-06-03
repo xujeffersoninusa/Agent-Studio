@@ -440,13 +440,13 @@ async function loadStudioRegistry(){
     if(!tabsEl) return;
     var html='<a class="nav-tab port" href="https://xujeffersoninusa.github.io/Action-Hub-MKT-Portfolio/?access=jeffersonxuinteradyne" target="_blank">📊 Portfolio</a>';
     // Build hub dropdown instead of individual tabs
-    if(hubs.length > 0) {
+    if(reg.length > 0) {
       html+='<div style="position:relative;display:inline-block;" id="hubDropWrap">';
-      html+='<button onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" class="nav-tab" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+hubs.length+') \u25BE</button>';
+      html+='<button onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" class="nav-tab" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+reg.length+') \u25BE</button>';
       html+='<div id="hubDropMenu" style="display:none;position:absolute;top:100%;left:0;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:4px 0;min-width:200px;max-height:400px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);">';
-      hubs.forEach(function(h){
+      reg.forEach(function(h){
         var url=h.hub_url||('https://xujeffersoninusa.github.io/'+h.hub_id+'-hub/');
-        html+='<a href="'+url+'" target="_blank" style="display:block;padding:6px 14px;color:#94a3b8;text-decoration:none;font-size:12px;white-space:nowrap;">'+h.name+'</a>';
+        html+='<a href="'+url+'" target="_blank" style="display:block;padding:6px 14px;color:#94a3b8;text-decoration:none;font-size:12px;white-space:nowrap;">'+(h.hub_name||h.name||h.hub_id)+'</a>';
       });
       html+='</div></div>';
     }
