@@ -450,7 +450,7 @@ async function loadStudioRegistry(){
       html+='</div></div>';
     }
     html+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="cursor:pointer;">\uD83D\uDEE0 Hub Manager</a>';
-    html+='<span class="nav-tab active">🤖 Agent Studio</span>';
+    html+='<span class="nav-tab active" onclick="hideHubManager()" style="cursor:pointer;">🤖 Agent Studio</span>';
     tabsEl.innerHTML=html;
   }catch(e){console.warn('Studio registry load:',e);}
 }
