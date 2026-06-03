@@ -1371,34 +1371,31 @@ async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
   var cfg=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
   var TOKEN=cfg.githubToken;
   var USER='xujeffersoninusa';
-  var repo=hubUrl.match(/github\.io\/([^/?]+)/)?hubUrl.match(/github\.io\/([^/?]+)/)[1]:'';
-  if(!repo){alert('Cannot determine repo from hub URL');return;}
+  var repo=hubUrl?hubUrl.match(/github\.io\/([^/?]+)/):null;
+  repo=repo?repo[1]:'';
+  function sqlRun(sql){return fetch(cfg.proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:'supabase-sql',projectRef:'cqgzndwisonvnlsxicmd',mgmtToken:cfg.supabaseMgmtToken,sql:sql})});}
   
   if(action==='archive'){
     if(!confirm('Archive "'+hubName+'"? Hub will go offline but all data is preserved.'))return;
     panel.innerHTML='<div style="padding:40px;text-align:center;color:#fbbf24;">Archiving '+hubName+'...</div>';
-    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}
-    console.log('Pages disabled for '+repo);
-    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'archived'})});
+    if(repo){try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}}
+    await sqlRun("UPDATE hub_registry SET status='archived' WHERE name='"+hubName.replace(/'/g,"''")+"';");
     console.log('\u2705 '+hubName+' archived');
     showHubManager();loadStudioRegistry();
   }else if(action==='resume'){
     if(!confirm('Resume "'+hubName+'"? Hub will come back online.'))return;
     panel.innerHTML='<div style="padding:40px;text-align:center;color:#4ade80;">Resuming '+hubName+'...</div>';
-    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'POST',headers:{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify({source:{branch:'main',path:'/'}})});}catch(e){}
-    console.log('Pages re-enabled for '+repo);
-    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'live'})});
+    if(repo){try{await fetch('https://api.github.com/repos/'+USER+'/'+repo+'/pages',{method:'POST',headers:{'Authorization':'Bearer '+TOKEN,'Content-Type':'application/json'},body:JSON.stringify({source:{branch:'main',path:'/'}})});}catch(e){}}
+    await sqlRun("UPDATE hub_registry SET status='live' WHERE name='"+hubName.replace(/'/g,"''")+"';");
     console.log('\u2705 '+hubName+' resumed');
     showHubManager();loadStudioRegistry();
   }else if(action==='harddelete'){
-    if(!confirm('\u26A0 PERMANENTLY DELETE "'+hubName+'"?\n\nThis will delete repo, drop table, and remove from registry.\n\nCANNOT be undone!'))return;
+    if(!confirm('\u26A0 PERMANENTLY DELETE "'+hubName+'"?\n\nThis will delete repo, drop table, and remove from registry.\nCANNOT be undone!'))return;
     if(!confirm('Are you REALLY sure?'))return;
     panel.innerHTML='<div style="padding:40px;text-align:center;color:#ef4444;">Deleting '+hubName+'...</div>';
-    try{await fetch('https://api.github.com/repos/'+USER+'/'+repo,{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}
-    if(dbTable){
-      try{await fetch(cfg.proxyUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target:'supabase-sql',projectRef:'cqgzndwisonvnlsxicmd',mgmtToken:cfg.supabaseMgmtToken,sql:'DROP TABLE IF EXISTS '+dbTable+';'})});}catch(e){}
-    }
-    await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'DELETE',headers:{'apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey}});
+    if(repo){try{await fetch('https://api.github.com/repos/'+USER+'/'+repo,{method:'DELETE',headers:{'Authorization':'Bearer '+TOKEN}});}catch(e){}}
+    if(dbTable){await sqlRun('DROP TABLE IF EXISTS '+dbTable+';');}
+    await sqlRun("DELETE FROM hub_registry WHERE name='"+hubName.replace(/'/g,"''")+"';");
     console.log('\u2705 '+hubName+' permanently deleted');
     showHubManager();loadStudioRegistry();
   }
