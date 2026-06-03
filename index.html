@@ -765,6 +765,15 @@ function renderReview(bp){
 }
 
 // ── STEP 4: Provision → generate SQL + HTML ──
+function log(msg,type){
+  var el=document.getElementById('provisionLog');
+  if(!el)return console.log(msg);
+  var d=new Date(),ts=d.toLocaleTimeString();
+  var color=type==='success'?'#4ade80':type==='error'?'#ef4444':type==='warn'?'#fbbf24':'#94a3b8';
+  el.innerHTML+='<div style="color:'+color+';margin:2px 0;font-size:13px;">'+ts+' '+msg+'</div>';
+  el.scrollTop=el.scrollHeight;
+  console.log(msg);
+}
 async function runProvision(){
   const bp={
     ...pipeline.blueprint,
@@ -1379,7 +1388,7 @@ function hubCard(h,status){
     +(repo?'<div style="color:#555;font-size:11px;margin-bottom:8px;">Repo: '+repo+'</div>':'')
     +(isActive&&url?'<div style="margin-bottom:8px;"><a href="'+url+'" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none;">\uD83D\uDD17 Open Hub</a></div>':'<div style="margin-bottom:8px;color:#666;font-size:11px;">\uD83D\uDD12 Offline</div>')
     +'<div>'+btns+'</div></div>';
-}out+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="text-decoration:none;">\u2699 Hub Manager</a>';
+}html+='<a class="nav-tab" href="#" onclick="showHubManager();return false;" style="text-decoration:none;">\u2699 Hub Manager</a>';
 async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
   var cfg=JSON.parse(localStorage.getItem('agentStudioConfig')||'{}');
   var TOKEN=cfg.githubToken;
