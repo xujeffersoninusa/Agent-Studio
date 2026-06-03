@@ -441,9 +441,9 @@ async function loadStudioRegistry(){
     // Build hub dropdown instead of individual tabs
     if(reg.length > 0) {
       html+='<div style="position:relative;display:inline-block;" id="hubDropWrap">';
-      html+='<button onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" class="nav-tab" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+reg.length+') \u25BE</button>';
+      html+='<button onclick="var m=document.getElementById(\'hubDropMenu\');m.style.display=m.style.display===\'block\'?\'none\':\'block\'" class="nav-tab" style="cursor:pointer;border:none;background:inherit;color:inherit;font:inherit;padding:inherit;">\uD83D\uDCCB Hubs ('+reg.filter(function(h){return h.status!=='archived'}).length+') \u25BE</button>';
       html+='<div id="hubDropMenu" style="display:none;position:absolute;top:100%;left:0;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:4px 0;min-width:200px;max-height:400px;overflow-y:auto;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.5);">';
-      reg.forEach(function(h){
+      reg.filter(function(h){return h.status!=='archived'}).forEach(function(h){
         var url=h.hub_url||('https://xujeffersoninusa.github.io/'+h.hub_id+'-hub/');
         html+='<a href="'+url+'" target="_blank" style="display:block;padding:6px 14px;color:#94a3b8;text-decoration:none;font-size:12px;white-space:nowrap;">'+(h.hub_name||h.name||h.hub_id)+'</a>';
       });
@@ -1381,7 +1381,7 @@ async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
     console.log('Pages disabled for '+repo);
     await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'archived'})});
     console.log('\u2705 '+hubName+' archived');
-    showHubManager();
+    showHubManager();loadStudioRegistry();
   }else if(action==='resume'){
     if(!confirm('Resume "'+hubName+'"? Hub will come back online.'))return;
     panel.innerHTML='<div style="padding:40px;text-align:center;color:#4ade80;">Resuming '+hubName+'...</div>';
@@ -1389,7 +1389,7 @@ async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
     console.log('Pages re-enabled for '+repo);
     await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'PATCH',headers:{'Content-Type':'application/json','apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey,'Prefer':'return=minimal'},body:JSON.stringify({status:'live'})});
     console.log('\u2705 '+hubName+' resumed');
-    showHubManager();
+    showHubManager();loadStudioRegistry();
   }else if(action==='harddelete'){
     if(!confirm('\u26A0 PERMANENTLY DELETE "'+hubName+'"?\n\nThis will delete repo, drop table, and remove from registry.\n\nCANNOT be undone!'))return;
     if(!confirm('Are you REALLY sure?'))return;
@@ -1400,7 +1400,7 @@ async function hubManagerAction(action,hubName,dbTable,hubUrl,panel){
     }
     await fetch(CONFIG.supabaseUrl+'/rest/v1/hub_registry?name=eq.'+encodeURIComponent(hubName),{method:'DELETE',headers:{'apikey':CONFIG.supabaseAnonKey,'Authorization':'Bearer '+CONFIG.supabaseAnonKey}});
     console.log('\u2705 '+hubName+' permanently deleted');
-    showHubManager();
+    showHubManager();loadStudioRegistry();
   }
 }
 
