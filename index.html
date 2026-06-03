@@ -773,6 +773,16 @@ async function runProvision(){
     const [sql, html] = await Promise.all([generateSQL(bp), generateHTML(bp)]);
     pipeline.generatedSQL = sql;
     pipeline.generatedHTML = html;
+    // ═══ SAFETY NET: ensure SQL has ALL columns the hub code references ═══
+    var fieldScan=html.match(/(\w+):r\.\1\|\|''/g)||[];
+    var allFields=[...new Set(fieldScan.map(function(m){return m.split(':')[0]}))];
+    var stdF=['id','title','account','priority','status','due','owner','description','checklist','project','bucket','type','version_no','modified_by','modified_at','created_at','is_deleted'];
+    var extraFromCode=allFields.filter(function(f){return stdF.indexOf(f)===-1});
+    if(extraFromCode.length>0){
+      var alterSQL=extraFromCode.map(function(f){return 'ALTER TABLE '+bp.db_table+' ADD COLUMN IF NOT EXISTS '+f+' TEXT DEFAULT \'\';'}).join('\n');
+      pipeline.generatedSQL=pipeline.generatedSQL+'\n'+alterSQL;
+      log('\u2705 Safety net: added '+extraFromCode.length+' extra columns: '+extraFromCode.join(', '));
+    }
     document.getElementById('provisionThinking').style.display='none';
     renderProvision(bp, sql, html);
     markStepDone(1);markStepDone(2);markStepDone(3);
