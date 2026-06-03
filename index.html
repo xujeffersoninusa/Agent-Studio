@@ -876,14 +876,14 @@ CREATE OR REPLACE TRIGGER ${bp.db_table}_updated_at
 -- Register in hub registry
 INSERT INTO hub_registry (id, name, team, product, purpose, token, db_table, hub_url, in_portfolio, status, owner)
 VALUES (
-  '${bp.hub_id}',
-  '${bp.hub_name}',
-  '${bp.team}',
+  '${(bp.hub_id||'').replace(/'/g,"''")}',
+  '${(bp.hub_name||'').replace(/'/g,"''")}',
+  '${(bp.team||'').replace(/'/g,"''")}',
   '${bp.product||''}',
   '${bp.purpose||''}',
-  '${bp.access_token}',
-  '${bp.db_table}',
-  'https://xujeffersoninusa.github.io/${bp.hub_id}-hub/?access=' || '${encodeURIComponent(bp.access_token)}',
+  '${(bp.access_token||'').replace(/'/g,"''")}',
+  '${(bp.db_table||'').replace(/'/g,"''")}',
+  'https://xujeffersoninusa.github.io/${(bp.hub_id||'').replace(/'/g,"''")}-hub/?access=' || '${encodeURIComponent(bp.access_token)}',
   true,
   'live',
   'jefferson.xu@teradyne.com'
@@ -891,7 +891,7 @@ VALUES (
 
 -- Verify
 SELECT COUNT(*) as columns_created FROM information_schema.columns
-WHERE table_name = '${bp.db_table}' AND table_schema = 'public';`;
+WHERE table_name = '${(bp.db_table||'').replace(/'/g,"''")}' AND table_schema = 'public';`;
 }
 
 async function generateHTML(bp){
