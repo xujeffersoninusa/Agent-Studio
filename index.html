@@ -820,6 +820,7 @@ CREATE TABLE IF NOT EXISTS ${bp.db_table} (
   modified_at   timestamptz default now(),
   created_at    timestamptz default now(),
   is_deleted    boolean default false
+  ${(bp.extra_fields||[]).map(function(f){return '  ,'+f.name+' text'}).join('\n')}
 );
 
 -- Indexes
@@ -888,33 +889,20 @@ async function generateHTML(bp){
   h=h.replace(/--accent:#60a5fa/,'--accent:'+ta);
   h=h.replace(/--accent-s:#0c2a3d/,'--accent-s:'+tas);
   h=h.replace(/<span class="ws-badge">[^<]*<\/span>/,'<span class="ws-badge">'+bp.team+'</span>');
-  function cutReplace(src,startMarker,endMarker,replacement){
-    var i=src.indexOf(startMarker);
-    if(i===-1)return src;
-    var j=src.indexOf(endMarker,i+startMarker.length);
-    if(j===-1)return src;
-    return src.substring(0,i)+replacement+src.substring(j+endMarker.length);
-  }
-  h=cutReplace(h,"department:r.department||'',","escalation_level:r.escalation_level||'',",efN);
-  h=cutReplace(h,"department:row.department||'',","escalation_level:row.escalation_level||'',",efP);
-  h=cutReplace(h,"department:document.getElementById('mdepartment')","escalation_level:document.getElementById('mescalation_level')?.value||'',",efS);
-  h=cutReplace(h,"department:document.getElementById('mdepartment')","escalation_level:document.getElementById('mescalation_level')?.value||''",efS);
+  function cutReplace(s,a,b,r){var i=s.indexOf(a);if(i===-1)return s;var j=s.indexOf(b,i);if(j===-1)return s;return s.substring(0,i)+r+s.substring(j+b.length);}
+  h=cutReplace(h,"department:r.department","escalation_level:r.escalation_level||'',",efN);
+  h=cutReplace(h,"department:row.department","escalation_level:row.escalation_level||'',",efP);
+  if(h.indexOf("escalation_level:document.getElementById('mescalation_level')?.value||'',")>-1)
+    h=cutReplace(h,"department:document.getElementById('mdepartment')","escalation_level:document.getElementById('mescalation_level')?.value||'',",efS);
+  else h=cutReplace(h,"department:document.getElementById('mdepartment')","escalation_level:document.getElementById('mescalation_level')?.value||''",efS);
   h=h.split("s('mdepartment',row?.department);s('mescalation_level',row?.escalation_level);").join(efO);
   var thI=h.indexOf('data-col="department"');
-  if(thI>-1){
-    var thStart=h.lastIndexOf("<th",thI);
-    var thEnd1=h.indexOf("</th>",h.indexOf("escalation_level",thI));
-    if(thEnd1>-1)h=h.substring(0,thStart)+efC+h.substring(thEnd1+5);
-  }
+  if(thI>-1){var thS=h.lastIndexOf("<th",thI);var escTh=h.indexOf("</th>",h.indexOf("escalation_level",thI));if(escTh>-1)h=h.substring(0,thS)+efC+h.substring(escTh+5);}
   h=h.split("'+esc(r.department||'')+'</td><td>'+esc(r.escalation_level||'')+'</td>").join(efR);
   var fmI=h.indexOf('id="mdepartment"');
-  if(fmI>-1){
-    var fmStart=h.lastIndexOf("<div>",fmI);
-    var fmEscI=h.indexOf("mescalation_level",fmI);
-    if(fmEscI>-1){var fmEnd=h.indexOf("</div>",fmEscI)+6;h=h.substring(0,fmStart)+efF+h.substring(fmEnd);}
-  }
+  if(fmI>-1){var fmS=h.lastIndexOf("<div>",fmI);var fmE=h.indexOf("mescalation_level",fmI);if(fmE>-1){var fmEnd=h.indexOf("</div>",fmE)+6;h=h.substring(0,fmS)+efF+h.substring(fmEnd);}}
   var tyI=h.indexOf('<select id="mType">');
-  if(tyI>-1){var tyEnd=h.indexOf("</select>",tyI)+9;h=h.substring(0,tyI)+'<select id="mType">'+typeOpts+'</select>'+h.substring(tyEnd);}
+  if(tyI>-1){var tyE=h.indexOf("</select>",tyI)+9;h=h.substring(0,tyI)+'<select id="mType">'+typeOpts+'</select>'+h.substring(tyE);}
   if(bp.ai_persona)h=h.replace(/I help[^.]*manage[^.]*\./,bp.ai_persona);
   var ST='<'+'script>',ET='</'+'script>';
   var s1=h.indexOf(ST,h.indexOf(ST)+1),e1=h.indexOf(ET,s1);
