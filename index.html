@@ -1281,6 +1281,7 @@ async function autoProvision(bp, sql, html){
   log(`🔑 Access token: <strong style="color:var(--amber);">${bp.access_token}</strong>`,'info');
   if(results.sql==='manual') log(`⚠️ Don't forget to run the SQL manually in Supabase!`,'warn');
   log('═══════════════════════════════════════','info');
+    loadStudioRegistry();
 
   document.getElementById('autoProvisionDone').style.display='flex';
   document.getElementById('hubLiveUrl').href = hubUrl;
