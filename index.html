@@ -893,7 +893,7 @@ async function generateHTML(bp){
   var sbUrl=CONFIG.supabaseUrl||'';var sbKey=CONFIG.supabaseAnonKey||'';var proxyUrl=CONFIG.proxyUrl||'';
   var typeOpts=(bp.action_types||['Issue','Feature Request']).map(function(t){return '<option>'+t+'</option>'}).join('');
   var efTH=ef.map(function(f){return '<th class="sortable" data-col="'+f.name+'" style="min-width:130px;width:130px;">'+f.label+'<span class="sort-icon"></span></th>'}).join('');
-  var efTdRaw=ef.map(function(f){return "<td>\\'+esc(r."+f.name+"||\\'\\')+'</td>"}).join('');
+  var efTdRaw=ef.map(function(f){return "<td>'+esc(r."+f.name+"||'')+'</td>"}).join('');
   var efNorm=ef.map(function(f){return f.name+":r."+f.name+"||''"}).join(',');if(efNorm)efNorm+=',';
   var efSave=ef.map(function(f){return f.name+":row."+f.name+"||''"}).join(',');if(efSave)efSave+=',';
   var efEdSave=ef.map(function(f){return f.name+":document.getElementById('m"+f.name+"')?.value||''"}).join(',');if(efEdSave)efEdSave+=',';
