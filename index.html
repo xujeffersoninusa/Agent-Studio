@@ -931,8 +931,8 @@ async function generateHTML(bp){
   h=h.split("s('mcustomer_impact',row?.customer_impact);s('mdepartment',row?.department);s('mescalation_level',row?.escalation_level);").join(efO);
   var thI=h.indexOf('data-col="customer_impact"');
   if(thI>-1){var thS=h.lastIndexOf("<th",thI);var escTh=h.indexOf("</th>",h.indexOf("escalation_level",thI));if(escTh>-1)h=h.substring(0,thS)+efC+h.substring(escTh+5);}
-  h=h.split("'+esc(r.customer_impact||'')+'</td><td>'+esc(r.department||'')+'</td><td>'+esc(r.escalation_level||'')+'</td>").join(efR);
-  h=h.split("'+esc(r.customer_impact||'')+'</td><td>'+esc(r.escalation_level||'')+'</td>").join(efR);
+  h=h.split("<td>'+esc(r.customer_impact||'')+'</td><td>'+esc(r.department||'')+'</td><td>'+esc(r.escalation_level||'')+'</td>").join(efR);
+  h=h.split("<td>'+esc(r.customer_impact||'')+'</td><td>'+esc(r.escalation_level||'')+'</td>").join(efR);
   var fmI=h.indexOf('id="mcustomer_impact"');
   if(fmI>-1){
     var fmS=h.lastIndexOf("<div>",fmI);
